@@ -41,11 +41,11 @@ public:
     QHBoxLayout *horizontalLayout_3;
     QHBoxLayout *horizontalLayout;
     QLabel *label;
-    QLabel *label_2;
+    QLabel *labelFileName;
     QSpacerItem *horizontalSpacer;
     QHBoxLayout *horizontalLayout_2;
     QLabel *label_3;
-    QLabel *label_4;
+    QLabel *labelCurTime;
     QSpacerItem *horizontalSpacer_2;
     QSpacerItem *verticalSpacer;
     QMenuBar *menuBar;
@@ -107,12 +107,12 @@ public:
 
         horizontalLayout->addWidget(label);
 
-        label_2 = new QLabel(centralWidget);
-        label_2->setObjectName(QString::fromUtf8("label_2"));
-        sizePolicy1.setHeightForWidth(label_2->sizePolicy().hasHeightForWidth());
-        label_2->setSizePolicy(sizePolicy1);
+        labelFileName = new QLabel(centralWidget);
+        labelFileName->setObjectName(QString::fromUtf8("labelFileName"));
+        sizePolicy1.setHeightForWidth(labelFileName->sizePolicy().hasHeightForWidth());
+        labelFileName->setSizePolicy(sizePolicy1);
 
-        horizontalLayout->addWidget(label_2);
+        horizontalLayout->addWidget(labelFileName);
 
 
         horizontalLayout_3->addLayout(horizontalLayout);
@@ -131,12 +131,12 @@ public:
 
         horizontalLayout_2->addWidget(label_3);
 
-        label_4 = new QLabel(centralWidget);
-        label_4->setObjectName(QString::fromUtf8("label_4"));
-        sizePolicy1.setHeightForWidth(label_4->sizePolicy().hasHeightForWidth());
-        label_4->setSizePolicy(sizePolicy1);
+        labelCurTime = new QLabel(centralWidget);
+        labelCurTime->setObjectName(QString::fromUtf8("labelCurTime"));
+        sizePolicy1.setHeightForWidth(labelCurTime->sizePolicy().hasHeightForWidth());
+        labelCurTime->setSizePolicy(sizePolicy1);
 
-        horizontalLayout_2->addWidget(label_4);
+        horizontalLayout_2->addWidget(labelCurTime);
 
         horizontalSpacer_2 = new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
 
@@ -209,9 +209,9 @@ public:
         actionWash->setText(QApplication::translate("MainWindow", "\346\270\205\346\264\227", nullptr));
         actionSetDFMB->setText(QApplication::translate("MainWindow", "DFMB\350\256\276\347\275\256", nullptr));
         label->setText(QApplication::translate("MainWindow", "\345\275\223\345\211\215\346\226\207\344\273\266:", nullptr));
-        label_2->setText(QApplication::translate("MainWindow", "\347\251\272", nullptr));
+        labelFileName->setText(QApplication::translate("MainWindow", "\347\251\272", nullptr));
         label_3->setText(QApplication::translate("MainWindow", "\345\275\223\345\211\215\346\227\266\351\227\264:", nullptr));
-        label_4->setText(QApplication::translate("MainWindow", "0", nullptr));
+        labelCurTime->setText(QApplication::translate("MainWindow", "0", nullptr));
         menuTEST->setTitle(QApplication::translate("MainWindow", "\346\226\207\344\273\266", nullptr));
         menu->setTitle(QApplication::translate("MainWindow", "\350\277\220\350\241\214", nullptr));
         menu_2->setTitle(QApplication::translate("MainWindow", "\351\200\211\351\241\271", nullptr));

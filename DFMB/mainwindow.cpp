@@ -7,6 +7,9 @@
 #include <QPaintEvent>
 #include <QSizePolicy>
 #include <QColor>
+#include <QFileDialog>
+#include <QFile>
+#include <QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -136,6 +139,27 @@ void MainWindow::paintEvent(QPaintEvent *event){
     }
 }
 
+int  MainWindow::parseLine(QString str){
+
+}
+
+void MainWindow::parseFile(){
+    QFile file(filePath);
+    if(!file.open(QIODevice::ReadOnly | QIODevice::Text)){
+        QMessageBox::critical(this, "错误", "打开文件失败");
+        return;
+    }
+    //因为重新打开了文件，记得初始化!!!!
+    instructions->clear();
+    QTextStream in(&file);
+    QString line = in.readLine() ;
+
+    while(!line.isNull()){
+        line = in.readLine();
+        qDebug() << line << '\n' ;
+    }
+}
+
 MainWindow::~MainWindow()
 {
     delete ui;
@@ -145,4 +169,11 @@ void MainWindow::on_actionSetDFMB_triggered()
 {
     setdfmbdialog = new SetDFMBDialog(this, col, row, inPortStr, outPortStr, this);
     setdfmbdialog -> show();
+}
+
+void MainWindow::on_actionOpenFile_triggered()
+{
+    filePath = QFileDialog::getOpenFileName(this, "打开文件", "./", "All files (*.*)");
+    ui->labelFileName->setText(filePath.mid(filePath.lastIndexOf('/')+1,filePath.length()));
+    parseFile();
 }

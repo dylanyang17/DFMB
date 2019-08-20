@@ -10,6 +10,14 @@ namespace Ui {
 class MainWindow;
 }
 
+struct Instruction{
+    int opt, arg1, arg2, arg3, arg4, arg5, arg6;
+
+    Instruction(int _opt=0, int _arg1=0, int _arg2=0, int _arg3=0, int _arg4=0, int _arg5=0, int _arg6=0){
+        opt=_opt, arg1=_arg1, arg2=_arg2, arg3=_arg3, arg4=_arg4, arg5=_arg5, arg6=_arg6;
+    }
+};
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -34,16 +42,21 @@ public:
 
     QPoint getMidPoint(int a, int b);
     QPoint getEdgeInd(QPoint p);
+    void parseFile();
+    int parseLine(QString str);
 private slots:
 
     void on_actionSetDFMB_triggered();
+
+    void on_actionOpenFile_triggered();
 
 private:
     Ui::MainWindow *ui;
     SetDFMBDialog *setdfmbdialog;
 
     int gridSize, col, row;
-    QString inPortStr, outPortStr;
+    QString inPortStr, outPortStr, filePath;
+    QList<Instruction> instructions[10005];
     QPoint leftUp;
     void paintEvent(QPaintEvent *);
 };
