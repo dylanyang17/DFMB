@@ -18,6 +18,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     gridSize=40;
     leftUp=QPoint(60,105);
+    timeLim=0;
     col=row=5;
     repaint();
 }
@@ -140,7 +141,8 @@ void MainWindow::paintEvent(QPaintEvent *event){
 }
 
 int  MainWindow::parseLine(QString str){
-
+    //失败返回-1，否则返回该条指令的执行时刻，注意执行时刻大于MAXTIME时同样返回-1
+    //TODO!!!!
 }
 
 void MainWindow::parseFile(){
@@ -150,13 +152,24 @@ void MainWindow::parseFile(){
         return;
     }
     //因为重新打开了文件，记得初始化!!!!
-    instructions->clear();
+    for(int i=0;i<=timeLim;++i)
+        instructions[i].clear();
+    timeLim=0;
     QTextStream in(&file);
-    QString line = in.readLine() ;
-
+    QString line = in.readLine(); ;
+    int cnt=0;
     while(!line.isNull()){
+        ++cnt;
+        if(line==""){
+            line = in.readLine();
+            continue;
+        }
+        int ret = parseLine(line) ;
+        if(ret==-1){
+            QMessageBox::critical(this, "错误", QString("第%1行指令出错").arg(cnt));
+            return;
+        }
         line = in.readLine();
-        qDebug() << line << '\n' ;
     }
 }
 

@@ -26,6 +26,8 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    const static int MAXTIME=10000;
+
     QPoint getPoint(int a, int b);
     int getCol();
     int getRow();
@@ -54,9 +56,9 @@ private:
     Ui::MainWindow *ui;
     SetDFMBDialog *setdfmbdialog;
 
-    int gridSize, col, row;
+    int gridSize, col, row, timeLim;
     QString inPortStr, outPortStr, filePath;
-    QList<Instruction> instructions[10005];
+    QList<Instruction> instructions[MAXTIME+5];
     QPoint leftUp;
     void paintEvent(QPaintEvent *);
 };
