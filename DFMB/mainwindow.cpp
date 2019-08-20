@@ -6,6 +6,7 @@
 #include <QPoint>
 #include <QPaintEvent>
 #include <QSizePolicy>
+#include <QColor>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -13,13 +14,34 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     gridSize=40;
-    leftUp=QPoint(50,70);
+    leftUp=QPoint(60,105);
     col=row=5;
     repaint();
 }
 
 QPoint MainWindow::getPoint(int a, int b){
+    //获得网格点的坐标，a=1且b=1时为左上角的网格点，a增大则向右移动
     return QPoint((a-1)*gridSize+leftUp.x(), (b-1)*gridSize+leftUp.y());
+}
+
+QPoint MainWindow::getMidPoint(int a, int b){
+    //获得网格中心点的坐标
+    return QPoint((2*a-1)*gridSize/2+leftUp.x(), (2*b-1)*gridSize/2+leftUp.y());
+}
+
+QPoint MainWindow::getEdgeInd(QPoint p){
+    //从边界的网格索引得到相邻的边界外处的网格索引
+    int x=p.x();
+    int y=p.y();
+    if(x==1)
+        return QPoint(x-1,y);
+    else if(y==1)
+        return QPoint(x,y-1);
+    else if(x==col)
+        return QPoint(x+1,y);
+    else if(y==row)
+        return QPoint(x,y+1);
+    else assert(0);
 }
 
 int MainWindow::getCol()
@@ -65,6 +87,9 @@ void MainWindow::setOutPortStr(QString outPortStr)
 int MainWindow::parsePortStr(QString portStr)
 {
     // 解析表示端口的字符串，存储到tmpList这个成员变量中，类型为QList<QPoint>。返回-1表示解析出错，-2表示数字范围出错，否则返回长度
+    if(portStr==""){
+        return 0;
+    }
     QStringList strList = portStr.split(';');
     int len = strList.length();
     tmpList.clear();
@@ -95,6 +120,20 @@ void MainWindow::paintEvent(QPaintEvent *event){
     QPoint tmp = getPoint(col+1,row+1);
     this->setMinimumSize(tmp.x()+50, tmp.y()+50);
     this->setMaximumSize(tmp.x()+50, tmp.y()+50);
+    painter.setBrush(QBrush(Qt::red,Qt::SolidPattern));
+    for(int i=0;i<inPortList.length();++i){
+        tmp = inPortList.at(i);
+        tmp = getEdgeInd(tmp);
+        tmp = getPoint(tmp.x(),tmp.y()) ;
+        painter.drawRoundRect(tmp.x(),tmp.y(),gridSize,gridSize);
+    }
+    painter.setBrush(QBrush(Qt::blue,Qt::SolidPattern));
+    for(int i=0;i<outPortList.length();++i){
+        tmp = outPortList.at(i);
+        tmp = getEdgeInd(tmp);
+        tmp = getPoint(tmp.x(),tmp.y()) ;
+        painter.drawRoundRect(tmp.x(),tmp.y(),gridSize,gridSize);
+    }
 }
 
 MainWindow::~MainWindow()

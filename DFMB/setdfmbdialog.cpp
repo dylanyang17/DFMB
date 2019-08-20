@@ -21,6 +21,11 @@ SetDFMBDialog::~SetDFMBDialog()
     delete ui;
 }
 
+bool isOnEdge(QPoint p, int col, int row)
+{
+    return p.x()==1||p.x()==col||p.y()==1||p.y()==row;
+}
+
 void SetDFMBDialog::on_buttonBox_accepted()
 {
     int col=ui->spinBoxCol->value();
@@ -29,33 +34,45 @@ void SetDFMBDialog::on_buttonBox_accepted()
         QMessageBox::critical(this, "参数错误", "行列不允许同时小于等于3");
         return;
     }
-    int ret = mainWindow->parsePortStr(ui->lineEditInPort->text());
-    if(ret==-1){
+    int ret1 = mainWindow->parsePortStr(ui->lineEditInPort->text());
+    if(ret1==-1){
         QMessageBox::critical(this, "参数错误", "输入端口格式错误");
         return;
     }
-    else if(ret==-2){
+    else if(ret1==-2){
         QMessageBox::critical(this, "参数错误", "输入端口坐标超出范围");
         return;
     }
-    else if(ret>1){
-        QMessageBox::critical(this, "参数错误", "输入端口应当唯一");
+    else if(ret1>1){
+        QMessageBox::critical(this, "参数错误", "输入端口不唯一");
+        return;
+    }
+    if(ret1!=0 && !isOnEdge(mainWindow->tmpList.at(0),col,row)){
+        QMessageBox::critical(this, "参数错误", "输入端口不在边界上");
         return;
     }
     QList<QPoint> inPortList=mainWindow->tmpList;
-    ret = mainWindow->parsePortStr(ui->lineEditOutPort->text());
-    if(ret==-1){
+    int ret2 = mainWindow->parsePortStr(ui->lineEditOutPort->text());
+    if(ret2==-1){
         QMessageBox::critical(this, "参数错误", "输出端口格式错误");
         return;
     }
-    else if(ret==-2){
+    else if(ret2==-2){
         QMessageBox::critical(this, "参数错误", "输出端口坐标超出范围");
         return;
+    }
+    for(int i=0;i<ret2;++i){
+        if(!isOnEdge(mainWindow->tmpList.at(i),col,row)){
+            QMessageBox::critical(this, "参数错误", "输出端口不在边界上");
+            return;
+        }
     }
     mainWindow->setCol(col);
     mainWindow->setRow(row);
     mainWindow->setInPortStr(ui->lineEditInPort->text());
     mainWindow->setOutPortStr(ui->lineEditOutPort->text());
-    mainWindow->inPortList  = inPortList;
-    mainWindow->outPortList = mainWindow->tmpList;
+    if(ret1>0) mainWindow->inPortList  = inPortList;
+    else mainWindow->inPortList.clear();
+    if(ret2>0) mainWindow->outPortList = mainWindow->tmpList;
+    else mainWindow->outPortList.clear();
 }

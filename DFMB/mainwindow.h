@@ -32,6 +32,8 @@ public:
     QList<QPoint> inPortList;
     QList<QPoint> outPortList;
 
+    QPoint getMidPoint(int a, int b);
+    QPoint getEdgeInd(QPoint p);
 private slots:
 
     void on_actionSetDFMB_triggered();
