@@ -142,7 +142,43 @@ void MainWindow::paintEvent(QPaintEvent *event){
 
 int  MainWindow::parseLine(QString str){
     //失败返回-1，否则返回该条指令的执行时刻，注意执行时刻大于MAXTIME时同样返回-1
-    //TODO!!!!
+    Instruction inst;
+    QStringList argList = str.split(',') ;
+    int time=-1, len=argList.length();
+    bool ok;
+    QString tmp = argList.at(0);
+    time = tmp.right(tmp.length()-tmp.lastIndexOf(' ')).toInt(&ok) ;
+    if(!ok) return -1;
+
+    if(str.left(str.indexOf(' '))=="Move"){
+        inst.opt=1;
+    } else if(str.left(str.indexOf(' '))=="Split"){
+        inst.opt=2;
+    } else if(str.left(str.indexOf(' '))=="Merge"){
+        inst.opt=3;
+    } else if(str.left(str.indexOf(' '))=="Input"){
+        inst.opt=4;
+    } else if(str.left(str.indexOf(' '))=="Output"){
+        inst.opt=5;
+    } else if(str.left(str.indexOf(' '))=="Mix"){
+        inst.opt=0;
+
+    }
+
+    if(inst.opt!=0){
+        if((inst.opt==1 && len!=5) || (inst.opt==2 && len!=7) || (inst.opt==3 && len!=5)
+                || (inst.opt==4 && len!=3) || (inst.opt==5 && len!=3))
+            return -1; //操作数个数不对应
+        for(int i=1;i<len;++i){
+            QString s = argList.at(i);
+            s = s.simplified();
+            if(s.endsWith(';')) s = s.left(s.length()-1);
+            inst.arg[i-1] = s.toInt(&ok);
+            if(!ok) return -1;
+        }
+        if(time>MAXTIME) return -1;
+        instructions[time].append(inst) ;
+    }
 }
 
 void MainWindow::parseFile(){

@@ -11,10 +11,10 @@ class MainWindow;
 }
 
 struct Instruction{
-    int opt, arg1, arg2, arg3, arg4, arg5, arg6;
+    int opt, arg[6];
 
-    Instruction(int _opt=0, int _arg1=0, int _arg2=0, int _arg3=0, int _arg4=0, int _arg5=0, int _arg6=0){
-        opt=_opt, arg1=_arg1, arg2=_arg2, arg3=_arg3, arg4=_arg4, arg5=_arg5, arg6=_arg6;
+    Instruction(int _opt=0, int _arg0=0, int _arg1=0, int _arg2=0, int _arg3=0, int _arg4=0, int _arg5=0){
+        opt=_opt, arg[0]=_arg0, arg[1]=_arg1, arg[2]=_arg2, arg[3]=_arg3, arg[4]=_arg4, arg[5]=_arg5;
     }
 };
 
@@ -46,6 +46,7 @@ public:
     QPoint getEdgeInd(QPoint p);
     void parseFile();
     int parseLine(QString str);
+    void toIntError(bool ok);
 private slots:
 
     void on_actionSetDFMB_triggered();
