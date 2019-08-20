@@ -161,8 +161,32 @@ int  MainWindow::parseLine(QString str){
     } else if(str.left(str.indexOf(' '))=="Output"){
         inst.opt=5;
     } else if(str.left(str.indexOf(' '))=="Mix"){
-        inst.opt=0;
+        if(len<=1 || (len&1)==0) return -1;
+        QPoint last;
+        for(int i=1;i<len;i+=2){
+            QPoint now;
+            QString s = argList.at(i).simplified();
+            if(s.endsWith(';')) s = s.left(s.length()-1);
+            now.setX(s.toInt(&ok));
+            if(!ok) return -1;
 
+            s = argList.at(i+1).simplified();
+            if(s.endsWith(';')) s = s.left(s.length()-1);
+            now.setY(s.toInt(&ok));
+            if(!ok) return -1;
+
+            if(i!=1){
+                inst.opt=1;
+                inst.arg[0]=last.x();
+                inst.arg[1]=last.y();
+                inst.arg[2]=now.x();
+                inst.arg[3]=now.y();
+                if(time+i/2>MAXTIME) return -1;
+                instructions[time+i/2].append(inst) ;
+            }
+            last=now;
+        }
+        inst.opt=0;
     }
 
     if(inst.opt!=0){
