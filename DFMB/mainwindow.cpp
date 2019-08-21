@@ -21,6 +21,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     gridSize=40;
+    filePath="./";
     leftUp=QPoint(60,105);
     timeLim=timeNow=0;
     col=row=5;
@@ -439,7 +440,7 @@ void MainWindow::openFileWithPath(QString path){
 
 void MainWindow::on_actionOpenFile_triggered()
 {
-    filePath = QFileDialog::getOpenFileName(this, "打开文件", "./", "All files (*.*)");
+    filePath = QFileDialog::getOpenFileName(this, "打开文件", filePath.mid(0, filePath.lastIndexOf('/')+1), "All files (*.*)");
     openFileWithPath(filePath);
 }
 
