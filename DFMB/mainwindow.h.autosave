@@ -50,6 +50,7 @@ public:
     int parseLine(QString str);
     void toIntError(bool ok);
     void init();
+    int newDrop();
 private slots:
 
     void on_actionSetDFMB_triggered();

@@ -10,6 +10,9 @@
 #include <QFileDialog>
 #include <QFile>
 #include <QMessageBox>
+#include <QTimer>
+#include <cmath>
+#include <algorithm>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -18,7 +21,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     gridSize=40;
     leftUp=QPoint(60,105);
-    timeLim=0;
+    timeLim=timeNow=0;
     col=row=5;
     repaint();
 }
@@ -39,12 +42,13 @@ QPoint MainWindow::getEdgeInd(QPoint p){
     int y=p.y();
     if(x==1)
         return QPoint(x-1,y);
-    else if(y==1)
-        return QPoint(x,y-1);
     else if(x==col)
         return QPoint(x+1,y);
     else if(y==row)
         return QPoint(x,y+1);
+    else if(y==1)
+        return QPoint(x,y-1);
+
     else assert(0);
 }
 
@@ -115,6 +119,8 @@ int MainWindow::parsePortStr(QString portStr)
 void MainWindow::paintEvent(QPaintEvent *event){
     QPainter painter(this) ;
     painter.setRenderHint(QPainter::Antialiasing, true); // 抗锯齿
+
+    //网格线
     for(int i=1;i<=col+1;++i){
         for(int j=1;j<=row+1;++j){
             if(i!=col+1) painter.drawLine(getPoint(i,j),getPoint(i+1,j));
@@ -122,8 +128,10 @@ void MainWindow::paintEvent(QPaintEvent *event){
         }
     }
     QPoint tmp = getPoint(col+1,row+1);
-    this->setMinimumSize(tmp.x()+50, tmp.y()+50);
-    this->setMaximumSize(tmp.x()+50, tmp.y()+50);
+    this->setMinimumSize(tmp.x()+60, tmp.y()+60);
+    this->setMaximumSize(tmp.x()+60, tmp.y()+60);
+
+    //输入和输出端口
     painter.setBrush(QBrush(Qt::red,Qt::SolidPattern));
     for(int i=0;i<inPortList.length();++i){
         tmp = inPortList.at(i);
@@ -138,10 +146,53 @@ void MainWindow::paintEvent(QPaintEvent *event){
         tmp = getPoint(tmp.x(),tmp.y()) ;
         painter.drawRoundRect(tmp.x(),tmp.y(),gridSize,gridSize);
     }
+
+    //清洗液滴的端口
+    painter.setBrush(QBrush(QColor(100,50,80),Qt::SolidPattern));
+    tmp = getEdgeInd(QPoint(1,row));
+    tmp = getPoint(tmp.x(),tmp.y());
+    painter.drawRoundRect(tmp.x(),tmp.y(),gridSize,gridSize);
+    painter.setBrush(QBrush(QColor(50,80,120),Qt::SolidPattern));
+    tmp = getEdgeInd(QPoint(col,1));
+    tmp = getPoint(tmp.x(),tmp.y());
+    painter.drawRoundRect(tmp.x(),tmp.y(),gridSize,gridSize);
+
+    //液滴
+    for(int i=1;i<=col;++i){
+        for(int j=1;j<=row;++j){
+            if(nowDrop[i][j]){
+                painter.setBrush(QBrush(dropColor.at(nowDrop[i][j]),Qt::SolidPattern));
+                tmp = getPoint(i,j) ;
+                painter.drawEllipse(tmp.x(),tmp.y(),gridSize,gridSize) ;
+            }
+        }
+    }
+}
+
+int MainWindow::newDrop(){
+    //返回++dropCnt，注意可能产生新颜色
+    ++dropCnt;
+    if(dropColor.length()<dropCnt){
+        dropColor.append(QColor(qrand()%230,qrand()%230,qrand()%230));
+    }
+    return dropCnt;
+}
+
+void MainWindow::init(){
+    //TODO!!!!!!!!!!!!!!!!做整个系统的初始化
+    qsrand(time(NULL));
+    dropCnt=0;
+    memset(nowDrop,0,sizeof(nowDrop));
+    for(int i=1;i<=col;++i){
+        for(int j=1;j<=row;++j){
+            histDrop[i][j].clear();
+        }
+    }
+    dropColor.clear();
 }
 
 int  MainWindow::parseLine(QString str){
-    //失败返回-1，否则返回该条指令的执行时刻，注意执行时刻大于MAXTIME时同样返回-1
+    //失败返回-1，否则返回该条指令的最后执行时刻，注意执行时刻大于MAXTIME时同样返回-1
     Instruction inst;
     QStringList argList = str.split(',') ;
     int time=-1, len=argList.length();
@@ -149,13 +200,16 @@ int  MainWindow::parseLine(QString str){
     QString tmp = argList.at(0);
     time = tmp.right(tmp.length()-tmp.lastIndexOf(' ')).toInt(&ok) ;
     if(!ok) return -1;
+    int ret=time+1;
 
     if(str.left(str.indexOf(' '))=="Move"){
         inst.opt=1;
     } else if(str.left(str.indexOf(' '))=="Split"){
         inst.opt=2;
+        ret++;
     } else if(str.left(str.indexOf(' '))=="Merge"){
         inst.opt=3;
+        ret++;
     } else if(str.left(str.indexOf(' '))=="Input"){
         inst.opt=4;
     } else if(str.left(str.indexOf(' '))=="Output"){
@@ -186,6 +240,7 @@ int  MainWindow::parseLine(QString str){
             }
             last=now;
         }
+        ret=ret+(len-2)/2;
         inst.opt=0;
     }
 
@@ -203,6 +258,7 @@ int  MainWindow::parseLine(QString str){
         if(time>MAXTIME) return -1;
         instructions[time].append(inst) ;
     }
+    return ret;
 }
 
 void MainWindow::parseFile(){
@@ -229,6 +285,7 @@ void MainWindow::parseFile(){
             QMessageBox::critical(this, "错误", QString("第%1行指令出错").arg(cnt));
             return;
         }
+        if(ret>timeLim) timeLim=ret;
         line = in.readLine();
     }
 }
@@ -249,4 +306,28 @@ void MainWindow::on_actionOpenFile_triggered()
     filePath = QFileDialog::getOpenFileName(this, "打开文件", "./", "All files (*.*)");
     ui->labelFileName->setText(filePath.mid(filePath.lastIndexOf('/')+1,filePath.length()));
     parseFile();
+    init();
+}
+
+void MainWindow::on_actionNextStep_triggered()
+{
+    if(timeNow==timeLim)
+        return;
+    Instruction inst;
+    for(int i=0;i<instructions[timeNow].length();++i){
+        inst = instructions[timeNow].at(i);
+        if(inst.opt==1){
+
+        } else if(inst.opt==2){
+
+        } else if(inst.opt==3){
+
+        } else if(inst.opt==4){
+
+        } else if(inst.opt==5){
+
+        }
+        //TODO!!!!!!!
+    }
+    ui->labelCurTime->setNum(++timeNow);
 }

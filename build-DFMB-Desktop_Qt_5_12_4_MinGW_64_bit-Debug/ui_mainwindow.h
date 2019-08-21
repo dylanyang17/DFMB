@@ -38,6 +38,7 @@ public:
     QAction *actionSetDFMB;
     QWidget *centralWidget;
     QGridLayout *gridLayout;
+    QSpacerItem *verticalSpacer;
     QHBoxLayout *horizontalLayout_3;
     QHBoxLayout *horizontalLayout;
     QLabel *label;
@@ -47,7 +48,6 @@ public:
     QLabel *label_3;
     QLabel *labelCurTime;
     QSpacerItem *horizontalSpacer_2;
-    QSpacerItem *verticalSpacer;
     QMenuBar *menuBar;
     QMenu *menuTEST;
     QMenu *menu;
@@ -90,6 +90,10 @@ public:
         gridLayout->setSpacing(6);
         gridLayout->setContentsMargins(11, 11, 11, 11);
         gridLayout->setObjectName(QString::fromUtf8("gridLayout"));
+        verticalSpacer = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
+
+        gridLayout->addItem(verticalSpacer, 1, 0, 1, 1);
+
         horizontalLayout_3 = new QHBoxLayout();
         horizontalLayout_3->setSpacing(6);
         horizontalLayout_3->setObjectName(QString::fromUtf8("horizontalLayout_3"));
@@ -147,10 +151,6 @@ public:
 
 
         gridLayout->addLayout(horizontalLayout_3, 0, 0, 1, 1);
-
-        verticalSpacer = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
-
-        gridLayout->addItem(verticalSpacer, 1, 0, 1, 1);
 
         MainWindow->setCentralWidget(centralWidget);
         menuBar = new QMenuBar(MainWindow);

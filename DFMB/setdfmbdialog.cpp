@@ -32,38 +32,46 @@ void SetDFMBDialog::on_buttonBox_accepted()
     int row=ui->spinBoxRow->value();
     if(col<=3 && row<=3){
         QMessageBox::critical(this, "参数错误", "行列不允许同时小于等于3");
+        this->show();
         return;
     }
     int ret1 = mainWindow->parsePortStr(ui->lineEditInPort->text());
     if(ret1==-1){
         QMessageBox::critical(this, "参数错误", "输入端口格式错误");
+        this->show();
         return;
     }
     else if(ret1==-2){
         QMessageBox::critical(this, "参数错误", "输入端口坐标超出范围");
+        this->show();
         return;
     }
     else if(ret1>1){
         QMessageBox::critical(this, "参数错误", "输入端口不唯一");
+        this->show();
         return;
     }
     if(ret1!=0 && !isOnEdge(mainWindow->tmpList.at(0),col,row)){
         QMessageBox::critical(this, "参数错误", "输入端口不在边界上");
+        this->show();
         return;
     }
     QList<QPoint> inPortList=mainWindow->tmpList;
     int ret2 = mainWindow->parsePortStr(ui->lineEditOutPort->text());
     if(ret2==-1){
         QMessageBox::critical(this, "参数错误", "输出端口格式错误");
+        this->show();
         return;
     }
     else if(ret2==-2){
         QMessageBox::critical(this, "参数错误", "输出端口坐标超出范围");
+        this->show();
         return;
     }
     for(int i=0;i<ret2;++i){
         if(!isOnEdge(mainWindow->tmpList.at(i),col,row)){
             QMessageBox::critical(this, "参数错误", "输出端口不在边界上");
+            this->show();
             return;
         }
     }
@@ -75,4 +83,5 @@ void SetDFMBDialog::on_buttonBox_accepted()
     else mainWindow->inPortList.clear();
     if(ret2>0) mainWindow->outPortList = mainWindow->tmpList;
     else mainWindow->outPortList.clear();
+    mainWindow->init();
 }
