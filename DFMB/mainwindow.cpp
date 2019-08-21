@@ -12,6 +12,7 @@
 #include <QMessageBox>
 #include <QTimer>
 #include <cmath>
+#include <QException>
 #include <algorithm>
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -319,23 +320,23 @@ int MainWindow::getMidState(int x1, int y1, int x2, int y2){
     } else return 2;
 }
 
-void MainWindow::handleMid(bool rev){
-    //处理中间态，当rev为true时逆向处理中间态
-}
-
 void MainWindow::instMove(int x1, int y1,int x2, int y2, bool rev){
     //从x1,y1移动到x2,y2，rev为true时表明撤销移动
-    if(rev) {
-        std::swap(x1,x2); std::swap(y1,y2);
+    if(!rev) {
+        int drop=nowDrop[x1][y1];
+        nowDrop[x2][y2] = drop ;
+        nowDrop[x1][y1] = 0;
+        histDrop[x2][y2][drop] = histDrop[x2][y2][drop]+1;
     }
-    int drop=nowDrop[x1][y1];
-    nowDrop[x2][y2] = drop ;
-    nowDrop[x1][y1] = 0;
-    if(!rev) histDrop[x2][y2][drop] = histDrop[x2][y2][drop]+1;
-    else histDrop[x1][y1][drop] = histDrop[x1][y1][drop]-1;
+    else {
+        int drop=nowDrop[x2][y2];
+        histDrop[x2][y2][drop] = histDrop[x2][y2][drop]-1;
+        nowDrop[x1][y1] = drop;
+        nowDrop[x2][y2] = 0;
+    }
 }
 
-void MainWindow::instSplit(int x1, int y1,int x2, int y2, int x3, int y3, bool rev){
+void MainWindow::instSplit1(int x1, int y1,int x2, int y2, int x3, int y3, bool rev){
     //从x1,y1分裂到x2,y2和x3,y3，rev为true时表明撤销分裂的首步
     if(!rev){
         nowDrop[x2][y2] = newDrop();
@@ -354,7 +355,7 @@ void MainWindow::instSplit(int x1, int y1,int x2, int y2, int x3, int y3, bool r
     }
 }
 
-void MainWindow::instMerge(int x1, int y1, int x2, int y2, int x3, int y3, bool rev){
+void MainWindow::instMerge1(int x1, int y1, int x2, int y2, int x3, int y3, bool rev){
     //从x1,y1和x2,y2合并到x3,y3，rev为true是表示撤销合并的首步
     if(!rev){
         nowDrop[x3][y3] = newDrop();
@@ -368,6 +369,25 @@ void MainWindow::instMerge(int x1, int y1, int x2, int y2, int x3, int y3, bool 
         nowDrop[x3][y3] = 0;
         dropCnt--;
     }
+}
+
+void MainWindow::instSplit2(int x1, int y1,int x2, int y2, int x3, int y3, bool rev){
+    //从x1,y1分裂到x2,y2和x3,y3，rev为true时表明撤销分裂的第二步
+    if(!rev){
+        disapDropStack.push(nowDrop[x1][y1]);
+        nowDrop[x1][y1]=0;
+        notAlone[x2][y2]=notAlone[x3][y3]=false;
+        midState[x1][y1]=QPoint(0,0);
+    } else {
+        midState[x1][y1]=QPoint(1,getMidState(x1,y1,x2,y2));
+        notAlone[x2][y2]=notAlone[x3][y3]=true;
+        nowDrop[x1][y1]=disapDropStack.top();
+        disapDropStack.pop();
+    }
+}
+
+void MainWindow::instMerge2(int x1, int y1, int x2, int y2, int x3, int y3, bool rev){
+    //从x1,y1和x2,y2合并到x3,y3，rev为true是表示撤销合并的第二步
 }
 
 int MainWindow::instInput(int x1, int y1, bool rev){
@@ -389,13 +409,47 @@ int MainWindow::instOutput(int x1, int y1, bool rev){
     if(outPortList.indexOf(QPoint(x1,y1))==-1)
         return -1;
     if(!rev){
-        outDropStack.push(nowDrop[x1][y1]);
+        disapDropStack.push(nowDrop[x1][y1]);
         nowDrop[x1][y1] = 0;
     } else{
-        nowDrop[x1][y1] = outDropStack.top();
-        outDropStack.pop();
+        nowDrop[x1][y1] = disapDropStack.top();
+        disapDropStack.pop();
     }
     return 0;
+}
+
+void MainWindow::handleMid(bool rev){
+    //处理中间态，当rev为true时逆向处理中间态（即生成中间态）
+    if(!rev){
+        for(int i=0;i<instructions[timeNow-1].length();++i){
+            Instruction inst = instructions[timeNow-1].at(i);
+            //TODO
+        }
+    }
+}
+
+void MainWindow::handleInst(Instruction inst, bool rev){
+    //处理指令，rev为true表示撤销指令
+    if(inst.opt==1){
+        int x1=inst.arg[0], y1=inst.arg[1], x2=inst.arg[2], y2=inst.arg[3];
+        instMove(x1,y1,x2,y2,rev);
+    } else if(inst.opt==2){
+        int x1=inst.arg[0], y1=inst.arg[1], x2=inst.arg[2], y2=inst.arg[3],
+                x3=inst.arg[4], y3=inst.arg[5];
+        instSplit1(x1,y1,x2,y2,x3,y3,rev);
+    } else if(inst.opt==3){
+        int x1=inst.arg[0], y1=inst.arg[1], x2=inst.arg[2], y2=inst.arg[3],
+             x3=(x1+x2)/2, y3=(y1+y2)/2;
+        instMerge1(x1,y1,x2,y2,x3,y3,rev);
+    } else if(inst.opt==4){
+        int x1=inst.arg[0], y1=inst.arg[1];
+        if(instInput(x1,y1,rev)==-1)
+            throw 1;
+    } else if(inst.opt==5){
+        int x1=inst.arg[0], y1=inst.arg[1];
+        if(instOutput(x1,y1,rev)==-1)
+            throw 2;
+    }
 }
 
 void MainWindow::on_actionNextStep_triggered()
@@ -407,26 +461,22 @@ void MainWindow::on_actionNextStep_triggered()
     handleMid(false);
 
     //处理指令
-    for(int i=0;i<instructions[timeNow].length();++i){
-        inst = instructions[timeNow].at(i);
-        if(inst.opt==1){
-            int x1=inst.arg[0], y1=inst.arg[1], x2=inst.arg[2], y2=inst.arg[3];
-            instMove(x1,y1,x2,y2,false);
-        } else if(inst.opt==2){
-            int x1=inst.arg[0], y1=inst.arg[1], x2=inst.arg[2], y2=inst.arg[3],
-                    x3=inst.arg[4], y3=inst.arg[5];
-            instSplit(x1,y1,x2,y2,x3,y3,false);
-        } else if(inst.opt==3){
-            int x1=inst.arg[0], y1=inst.arg[1], x2=inst.arg[2], y2=inst.arg[3],
-                 x3=(x1+x2)/2, y3=(y1+y2)/2;
-            instMerge(x1,y1,x2,y2,x3,y3,false);
-        } else if(inst.opt==4){
-            int x1=inst.arg[0], y1=inst.arg[1];
-            instInput(x1,y1,false);
-        } else if(inst.opt==5){
-            int x1=inst.arg[0], y1=inst.arg[1];
-            instOutput(x1,y1,false);
+    int now;
+    try {
+        for(now=0;now<instructions[timeNow].length();++now){
+            handleInst(instructions[timeNow].at(now), false);
         }
+    } catch (int a) {
+        if(a==1){
+            QMessageBox::critical(this, "错误", "输入不在端口相邻处");
+        } else if(a==2){
+            QMessageBox::critical(this, "错误", "输出不在端口相邻处");
+        }
+        for(now=now-1;now>=0;--now){
+            handleInst(instructions[timeNow].at(now), true);
+        }
+        handleMid(true);
     }
+
     ui->labelCurTime->setNum(++timeNow);
 }

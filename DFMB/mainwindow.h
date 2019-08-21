@@ -55,10 +55,13 @@ public:
     int getMidState(int x1, int y1, int x2, int y2);
     void handleMid(bool rev);
     void instMove(int x1, int y1, int x2, int y2, bool rev);
-    void instSplit(int x1, int y1, int x2, int y2, int x3, int y3, bool rev);
-    void instMerge(int x1, int y1, int x2, int y2, int x3, int y3, bool rev);
+    void instSplit1(int x1, int y1, int x2, int y2, int x3, int y3, bool rev);
+    void instMerge1(int x1, int y1, int x2, int y2, int x3, int y3, bool rev);
     int instInput(int x1, int y1, bool rev);
     int instOutput(int x1, int y1, bool rev);
+    void handleInst(Instruction inst, bool rev);
+    void instSplit2(int x1, int y1, int x2, int y2, int x3, int y3, bool rev);
+    void instMerge2(int x1, int y1, int x2, int y2, int x3, int y3, bool rev);
 private slots:
 
     void on_actionSetDFMB_triggered();
@@ -80,7 +83,7 @@ private:
     QPoint midState[MAXN][MAXN];           //标记中间结点，第一个参数为0表示不在中间状态，为1表示正在分裂，为2表示正在合并，
                                            //第二个参数为1表示水平中间结点，2表示垂直中间结点
     bool notAlone[MAXN][MAXN];             //标记不单独画出的格子
-    QStack<int> outDropStack;              //输出的液滴栈
+    QStack<int> disapDropStack;            //消失的液滴栈
     QPoint leftUp;
     void paintEvent(QPaintEvent *);
 };
