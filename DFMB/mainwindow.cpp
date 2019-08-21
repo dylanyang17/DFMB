@@ -26,6 +26,7 @@ MainWindow::MainWindow(QWidget *parent) :
     soundSplit2 = new QSound(soundSplit2Path);
     soundMerge = new QSound(soundMergePath);
     gridSize=40;
+    tinySize=gridSize/5;
     filePath="./";
     leftUp=QPoint(60,135);
     timeLim=timeNow=0;
@@ -219,11 +220,32 @@ void MainWindow::paintEvent(QPaintEvent *event){
                     painter.drawEllipse(tmp.x(), tmp.y()+gridSize/2, gridSize, gridSize*2);
                 }
             }
+            if(!nowDrop[i][j] && !notAlone[i][j]){
+                QMapIterator<int, int> it(histDrop[i][j]);
+                while(it.hasNext()){
+                    //qDebug() << "TEST:" << i << ' ' << j << ' ' << *it << '\n' ;
+                    if(it.next().value()>0){
+                        painter.setBrush(QBrush(dropColor.at(it.key()-1),Qt::SolidPattern)) ;
+                        tmp = getPoint(i,j+1) ;
+                        QMap<int, QPoint>::iterator tmpIt = tinyPos[i][j].find(it.key());
+                        int x,y;
+                        if(tmpIt==tinyPos[i][j].end()){
+                            x=rd(tmp.x(),tmp.x()+gridSize-tinySize);
+                            y=rd(tmp.y(),tmp.y()+gridSize-tinySize);
+                            tinyPos[i][j][it.key()] = QPoint(x,y) ;
+                        } else {
+                            x=(*tmpIt).x();
+                            y=(*tmpIt).y();
+                        }
+                        painter.drawEllipse(x, y, tinySize, tinySize);
+                    }
+                }
+            }
         }
     }
 }
 
-int rd(int l,int r){
+int MainWindow::rd(int l,int r){
     return qrand()%(r-l+1)+l;
 }
 
@@ -267,6 +289,7 @@ void MainWindow::init(){
     for(int i=1;i<=col;++i){
         for(int j=1;j<=row;++j){
             histDrop[i][j].clear();
+            tinyPos[i][j].clear();
         }
     }
     dropColor.clear();

@@ -69,6 +69,7 @@ public:
     void debugDrop(int drop);
     void autoSet();
     void openFileWithPath(QString path);
+    int rd(int l, int r);
 private slots:
 
     void on_actionSetDFMB_triggered();
@@ -91,7 +92,7 @@ private:
     Ui::MainWindow *ui;
     SetDFMBDialog *setdfmbdialog;
 
-    int gridSize, col, row, timeLim, timeNow, dropCnt;
+    int tinySize, gridSize, col, row, timeLim, timeNow, dropCnt;
     const QString soundDir="res\\", soundMovePath=soundDir+"move.wav",
             soundSplit1Path=soundDir+"split1.wav", soundSplit2Path=soundDir+"split2.wav",
             soundMergePath=soundDir+"merge.wav";
@@ -105,6 +106,7 @@ private:
                                            //第二个参数为1表示水平中间结点，2表示垂直中间结点
     bool notAlone[MAXN][MAXN];             //标记不单独画出的格子
     QStack<int> disapDropStack;            //消失的液滴栈
+    QMap<int, QPoint> tinyPos[MAXN][MAXN]; //某个格子对于各种颜色标记的小圆位置
     QPoint leftUp;
     QTimer *timerPlayAll;
     void paintEvent(QPaintEvent *);
