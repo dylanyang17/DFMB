@@ -48,6 +48,26 @@ Output(opt==5): x1,y1             (由1位置输出)
 
 处于中间态时，在两侧放上nowDrop，但是设定notAlone[][]来不单独画出这两个水滴，另外在中间加上midState[][]状态。
 
+## 约束的处理
+
+做指令前先存下每个格子对应的液滴编号，在做完一个时刻的指令后，直接枚举每个格子，通过判断其周围八个格子的状态来进行判断即可。**只是需要注意，处于中间态的中间点不需要用来做判断**，这是因为这个中间点的周围八个点被其两侧点的周围八个点完全包含，所以并不需要判断，而若判断的话可能会与其两侧点被误判成不满足约束。
+
+这部分代码如下(其中tmpDrop为上一时刻时每个格子的液滴编号)：
+
+```C++
+for(int x1=1;x1<=col;++x1){
+    for(int y1=1;y1<=row;++y1){
+        if(nowDrop[x1][y1] && !midState[x1][y1].x()){
+            for(int d=0;d<DIRNUM;++d){
+                int x2=x1+dir[d][0], y2=y1+dir[d][1];
+                if(x2<1||y2<1||x2>col||y2>row||midState[x2][y2].x()) continue;
+                if(nowDrop[x2][y2] && nowDrop[x2][y2]!=nowDrop[x1][y1]) throw 3;
+                if(tmpDrop[x2][y2] && tmpDrop[x2][y2]!=nowDrop[x1][y1]) throw 4;
+            }
+		}
+	}
+}
+```
 
 ## 加分项
 

@@ -27,7 +27,7 @@ MainWindow::MainWindow(QWidget *parent) :
     soundMerge = new QSound(soundMergePath);
     gridSize=40;
     filePath="./";
-    leftUp=QPoint(60,105);
+    leftUp=QPoint(60,135);
     timeLim=timeNow=0;
     col=row=5;
     debugOn=true;
@@ -80,14 +80,14 @@ QPoint MainWindow::getEdgeInd(QPoint p){
     //从边界的网格索引得到相邻的边界外处的网格索引
     int x=p.x();
     int y=p.y();
-    if(x==1)
-        return QPoint(x-1,y);
-    else if(x==col)
-        return QPoint(x+1,y);
-    else if(y==row)
+    if(y==row)
         return QPoint(x,y+1);
     else if(y==1)
         return QPoint(x,y-1);
+    else if(x==1)
+        return QPoint(x-1,y);
+    else if(x==col)
+        return QPoint(x+1,y);
     else {
         assert(0);
         return QPoint(-1,-1);
@@ -191,14 +191,16 @@ void MainWindow::paintEvent(QPaintEvent *event){
     }
 
     //清洗液滴的端口
-    painter.setBrush(QBrush(QColor(100,50,80),Qt::SolidPattern));
-    tmp = getEdgeInd(QPoint(1,1));
-    tmp = getPoint(tmp.x(),tmp.y()+1);
-    painter.drawRoundRect(tmp.x(),tmp.y(),gridSize,gridSize);
-    painter.setBrush(QBrush(QColor(50,80,120),Qt::SolidPattern));
-    tmp = getEdgeInd(QPoint(col,row));
-    tmp = getPoint(tmp.x(),tmp.y()+1);
-    painter.drawRoundRect(tmp.x(),tmp.y(),gridSize,gridSize);
+    if(ui->actionWash->isChecked()){
+        painter.setBrush(QBrush(QColor(100,50,80),Qt::SolidPattern));
+        tmp = QPoint(0,1);
+        tmp = getPoint(tmp.x(),tmp.y()+1);
+        painter.drawRoundRect(tmp.x(),tmp.y(),gridSize,gridSize);
+        painter.setBrush(QBrush(QColor(50,80,120),Qt::SolidPattern));
+        tmp = QPoint(col+1,row);
+        tmp = getPoint(tmp.x(),tmp.y()+1);
+        painter.drawRoundRect(tmp.x(),tmp.y(),gridSize,gridSize);
+    }
 
     //液滴
     for(int i=1;i<=col;++i){
@@ -639,6 +641,10 @@ void MainWindow::on_actionNextStep_triggered()
         on_actionPause_triggered();
         return;
     }
+    int tmpDrop[MAXN][MAXN];
+    QPoint tmpMidState[MAXN][MAXN];
+    memcpy(tmpDrop, nowDrop, sizeof(tmpDrop));
+    memcpy(tmpMidState, midState, sizeof(tmpMidState));
     Instruction inst;
     //处理midState（实际上一个更优的做法是直接把合并和分裂都拆成两条来做）
     handleMid(false);
@@ -649,11 +655,34 @@ void MainWindow::on_actionNextStep_triggered()
         for(now=0;now<instructions[timeNow].length();++now){
             handleInst(instructions[timeNow].at(now), false);
         }
+        for(int x1=1;x1<=col;++x1){
+            for(int y1=1;y1<=row;++y1){
+                if(nowDrop[x1][y1] && !midState[x1][y1].x()){
+                    for(int d=0;d<DIRNUM;++d){
+                        int x2=x1+dir[d][0], y2=y1+dir[d][1];
+                        if(x2<1||y2<1||x2>col||y2>row||midState[x2][y2].x()) continue;
+                        if(nowDrop[x2][y2] && nowDrop[x2][y2]!=nowDrop[x1][y1]) {
+                            qDebug() << x1 << ' ' << y1 << ' ' << x2 << ' ' << y2 << '\n';
+                            throw 3;
+                        }
+                        if(tmpDrop[x2][y2] && tmpDrop[x2][y2]!=nowDrop[x1][y1] && !tmpMidState[x2][y2].x() && tmpMidState[x1][y1].y()!=d/2+1) {
+                            //qDebug() << x1 << ' ' << y1 << ' ' << x2 << ' ' << y2 << '\n';
+                            //qDebug() << tmpMidState[x1][y1].x() << ' ' << d << ' ' << tmpMidState[x2][y2].x() << '\n' ;
+                            throw 4;
+                        }
+                    }
+                }
+            }
+        }
     } catch (int a) {
         if(a==1){
             QMessageBox::critical(this, "错误", "输入不在端口相邻处");
         } else if(a==2){
             QMessageBox::critical(this, "错误", "输出不在端口相邻处");
+        } else if(a==3){
+            QMessageBox::critical(this, "错误", "不满足静态约束");
+        } else if(a==4){
+            QMessageBox::critical(this, "错误", "不满足动态约束");
         }
         for(now=now-1;now>=0;--now){
             handleInst(instructions[timeNow].at(now), true);
@@ -702,4 +731,9 @@ void MainWindow::on_actionPause_triggered()
     timerPlayAll->stop();
     ui->actionNextStep->setEnabled(true);
     ui->actionPreviousStep->setEnabled(true);
+}
+
+void MainWindow::on_actionWash_triggered()
+{
+    repaint();
 }

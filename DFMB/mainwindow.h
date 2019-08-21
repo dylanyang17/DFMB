@@ -33,7 +33,8 @@ public:
     bool debugOn;
     const static int MAXTIME=10000; //时间上界
     const static int MAXN=105;      //长宽上界
-
+    const static int DIRNUM=8;      //八个方向
+    int dir[DIRNUM][2] = {{1,0},{-1,0},{0,1},{0,-1},{1,1},{-1,-1},{1,-1},{-1,1}} ;
     QPoint getPoint(int a, int b);
     int getCol();
     int getRow();
@@ -83,6 +84,8 @@ private slots:
     void on_actionPlayAll_triggered();
 
     void on_actionPause_triggered();
+
+    void on_actionWash_triggered();
 
 private:
     Ui::MainWindow *ui;
