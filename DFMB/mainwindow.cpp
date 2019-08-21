@@ -24,7 +24,14 @@ MainWindow::MainWindow(QWidget *parent) :
     leftUp=QPoint(60,105);
     timeLim=timeNow=0;
     col=row=5;
+    debugOn=true;
     repaint();
+}
+
+void MainWindow::debug(QString s){
+    if(debugOn){
+        qDebug() << s;
+    }
 }
 
 QPoint MainWindow::getPoint(int a, int b){
@@ -175,7 +182,7 @@ void MainWindow::paintEvent(QPaintEvent *event){
 int MainWindow::newDrop(){
     //返回++dropCnt，注意可能产生新颜色
     ++dropCnt;
-    qDebug() << dropCnt << '\n';
+    debug(QString("dropCnt: %1\n").arg(dropCnt));
     if(dropColor.length()<dropCnt){
         dropColor.append(QColor(qrand()%230,qrand()%230,qrand()%230));
     }
@@ -419,6 +426,7 @@ int MainWindow::instInput(int x1, int y1, bool rev){
     } else {
         histDrop[x1][y1][nowDrop[x1][y1]] = histDrop[x1][y1][nowDrop[x1][y1]]-1;
         nowDrop[x1][y1] = 0;
+        --dropCnt;
     }
     return 0;
 }

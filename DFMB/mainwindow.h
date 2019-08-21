@@ -28,6 +28,7 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    bool debugOn;
     const static int MAXTIME=10000; //时间上界
     const static int MAXN=105;      //长宽上界
 
@@ -62,6 +63,7 @@ public:
     void handleInst(Instruction inst, bool rev);
     void instSplit2(int x1, int y1, int x2, int y2, int x3, int y3, bool rev);
     void instMerge2(int x1, int y1, int x2, int y2, int x3, int y3, bool rev);
+    void debug(QString s);
 private slots:
 
     void on_actionSetDFMB_triggered();
