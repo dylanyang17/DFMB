@@ -191,9 +191,9 @@ public:
         label_2->setText(QApplication::translate("SetDFMBDialog", "\345\210\227\346\225\260", nullptr));
         label->setText(QApplication::translate("SetDFMBDialog", "\350\241\214\346\225\260", nullptr));
         label_3->setText(QApplication::translate("SetDFMBDialog", "\350\276\223\345\205\245\347\253\257\345\217\243", nullptr));
-        label_5->setText(QApplication::translate("SetDFMBDialog", "(\346\240\274\345\274\217\345\275\242\345\246\202\357\274\2321,5)", nullptr));
+        label_5->setText(QApplication::translate("SetDFMBDialog", "(\346\240\274\345\274\217\345\275\242\345\246\202\357\274\2321,3;2,5;5,5)", nullptr));
         label_4->setText(QApplication::translate("SetDFMBDialog", "\350\276\223\345\207\272\347\253\257\345\217\243", nullptr));
-        label_6->setText(QApplication::translate("SetDFMBDialog", "(\346\240\274\345\274\217\345\275\242\345\246\202\357\274\2321,3;2,5;5,5)", nullptr));
+        label_6->setText(QApplication::translate("SetDFMBDialog", "(\346\240\274\345\274\217\345\275\242\345\246\202\357\274\2321,5)", nullptr));
     } // retranslateUi
 
 };

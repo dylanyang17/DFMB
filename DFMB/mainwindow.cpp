@@ -105,6 +105,7 @@ void MainWindow::setOutPortStr(QString outPortStr)
 int MainWindow::parsePortStr(QString portStr, int col, int row)
 {
     // 解析表示端口的字符串，存储到tmpList这个成员变量中，类型为QList<QPoint>。返回-1表示解析出错，-2表示数字范围出错，否则返回长度
+    // !!!!特别注意输入文本的坐标y值与代码中坐标y值不同！用row-y+1即可得到实际y
     if(portStr==""){
         return 0;
     }
@@ -119,6 +120,7 @@ int MainWindow::parsePortStr(QString portStr, int col, int row)
         int x=strList2.at(0).toInt(&ok);
         if(!ok) return -1;
         int y=strList2.at(1).toInt(&ok);
+        y = row-y+1; //坐标变换
         if(!ok) return -1;
         if(x<1 || x>col || y<1 || y>row) return -2;
         tmpList.append(QPoint(x,y));
@@ -192,7 +194,7 @@ int MainWindow::newDrop(){
 void MainWindow::init(){
     //TODO!!!!!!!!!!!!!!!!做整个系统的初始化
     qsrand(time(NULL));
-    timeNow=0;
+    ui->labelCurTime->setNum(timeNow=0);
     dropCnt=0;
     memset(notAlone,0,sizeof(notAlone));
     memset(midState,0,sizeof(midState));
@@ -242,7 +244,7 @@ int  MainWindow::parseLine(QString str){
 
             s = argList.at(i+1).simplified();
             if(s.endsWith(';')) s = s.left(s.length()-1);
-            now.setY(s.toInt(&ok));
+            now.setY(row+1-s.toInt(&ok));
             if(!ok) return -1;
 
             if(i!=1){
@@ -270,6 +272,7 @@ int  MainWindow::parseLine(QString str){
             if(s.endsWith(';')) s = s.left(s.length()-1);
             inst.arg[i-1] = s.toInt(&ok);
             if(!ok) return -1;
+            if(!(i&1)) inst.arg[i-1]=row+1-inst.arg[i-1];
         }
         if(time>MAXTIME) return -1;
         instructions[time].append(inst) ;
@@ -529,6 +532,8 @@ void MainWindow::on_actionNextStep_triggered()
             handleInst(instructions[timeNow].at(now), true);
         }
         handleMid(true);
+        repaint();
+        return;
     }
 
     ui->labelCurTime->setNum(++timeNow);

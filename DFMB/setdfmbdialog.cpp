@@ -46,15 +46,12 @@ void SetDFMBDialog::on_buttonBox_accepted()
         this->show();
         return;
     }
-    else if(ret1>1){
-        QMessageBox::critical(this, "参数错误", "输入端口不唯一");
-        this->show();
-        return;
-    }
-    if(ret1!=0 && !isOnEdge(mainWindow->tmpList.at(0),col,row)){
-        QMessageBox::critical(this, "参数错误", "输入端口不在边界上");
-        this->show();
-        return;
+    for(int i=0;i<ret1;++i){
+        if(ret1!=0 && !isOnEdge(mainWindow->tmpList.at(i),col,row)){
+            QMessageBox::critical(this, "参数错误", "输入端口不在边界上");
+            this->show();
+            return;
+        }
     }
     QList<QPoint> inPortList=mainWindow->tmpList;
     int ret2 = mainWindow->parsePortStr(ui->lineEditOutPort->text(), col, row);
@@ -67,13 +64,15 @@ void SetDFMBDialog::on_buttonBox_accepted()
         QMessageBox::critical(this, "参数错误", "输出端口坐标超出范围");
         this->show();
         return;
+    } else if(ret2>1){
+        QMessageBox::critical(this, "参数错误", "输出端口不唯一");
+        this->show();
+        return;
     }
-    for(int i=0;i<ret2;++i){
-        if(!isOnEdge(mainWindow->tmpList.at(i),col,row)){
-            QMessageBox::critical(this, "参数错误", "输出端口不在边界上");
-            this->show();
-            return;
-        }
+    if(!isOnEdge(mainWindow->tmpList.at(0),col,row)){
+        QMessageBox::critical(this, "参数错误", "输出端口不在边界上");
+        this->show();
+        return;
     }
     mainWindow->setCol(col);
     mainWindow->setRow(row);
