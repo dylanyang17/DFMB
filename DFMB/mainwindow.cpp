@@ -208,7 +208,7 @@ void MainWindow::paintEvent(QPaintEvent *event){
                     tmp = getPoint(i-1,j+1) ;
                     painter.drawEllipse(tmp.x()+gridSize/2, tmp.y(), gridSize*2, gridSize);
                 } else{
-                    tmp = getPoint(i,j) ;
+                    tmp = getPoint(i,j+2) ;
                     painter.drawEllipse(tmp.x(), tmp.y()+gridSize/2, gridSize, gridSize*2);
                 }
             }
