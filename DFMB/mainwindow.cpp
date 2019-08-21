@@ -182,6 +182,8 @@ void MainWindow::init(){
     //TODO!!!!!!!!!!!!!!!!做整个系统的初始化
     qsrand(time(NULL));
     dropCnt=0;
+    memset(notAlone,0,sizeof(notAlone));
+    memset(midState,0,sizeof(midState));
     memset(nowDrop,0,sizeof(nowDrop));
     for(int i=1;i<=col;++i){
         for(int j=1;j<=row;++j){
@@ -309,18 +311,56 @@ void MainWindow::on_actionOpenFile_triggered()
     init();
 }
 
+int MainWindow::getMidState(int x1, int y1, int x2, int y2){
+    //输入x1,y1和x2,y2，保证这两个点其中有一个是中间点，判断为水平(1)还是竖直(2)
+    if(abs(x1-x2)==1){
+        return 1;
+    } else return 2;
+}
+
+void MainWindow::handleMid(bool rev){
+    //处理中间态，当rev为true时逆向处理中间态
+}
+
+void MainWindow::instMove(int x1, int y1,int x2, int y2){
+    //从x1,y1移动到x2,y2
+    int drop=nowDrop[x1][y1];
+    nowDrop[x2][y2] = drop ;
+    nowDrop[x1][y1] = 0;
+    histDrop[x2][y2][drop] = histDrop[x2][y2][drop]+1;
+}
+
+void MainWindow::instSplit(int x1, int y1,int x2, int y2, int x3, int y3){
+    //从x1,y1分裂到x2,y2和x3,y3
+}
+
 void MainWindow::on_actionNextStep_triggered()
 {
     if(timeNow==timeLim)
         return;
     Instruction inst;
+    //处理midState TODO
+
+
+    //处理指令
     for(int i=0;i<instructions[timeNow].length();++i){
         inst = instructions[timeNow].at(i);
         if(inst.opt==1){
-
+            int x1=inst.arg[0], y1=inst.arg[1], x2=inst.arg[2], y2=inst.arg[3];
+            instMove(x1,y1,x2,y2);
         } else if(inst.opt==2){
-
+            int x1=inst.arg[0], y1=inst.arg[1], x2=inst.arg[2], y2=inst.arg[3],
+                    x3=inst.arg[4], y3=inst.arg[5];
+            int drop=nowDrop[x1][y1] ;
+            nowDrop[x2][y2] = newDrop();
+            nowDrop[x3][y3] = newDrop();
+            notAlone[x2][y2] = true;
+            notAlone[x3][y3] = true;
+            midState[x1][y1].setX();
+            midState[x1][y1].setY(getMidState(x1,y1,x2,y2));
         } else if(inst.opt==3){
+            int x1=inst.arg[0], y1=inst.arg[1], x2=inst.arg[2], y2=inst.arg[3],
+                    x3=(x1+x2)/2, y3=(y1+y2)/2;
 
         } else if(inst.opt==4){
 

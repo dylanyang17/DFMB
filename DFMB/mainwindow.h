@@ -50,6 +50,11 @@ public:
     int parseLine(QString str);
     void toIntError(bool ok);
     void init();
+    int newDrop();
+    int getMidState(int x1, int y1, int x2, int y2);
+    void instMove(int x1, int y1, int x2, int y2);
+    void instSplit(int x1, int y1, int x2, int y2, int x3, int y3);
+    void handleMid(bool rev);
 private slots:
 
     void on_actionSetDFMB_triggered();
@@ -66,8 +71,11 @@ private:
     QString inPortStr, outPortStr, filePath;
     QList<Instruction> instructions[MAXTIME+5];
     int nowDrop[MAXN][MAXN];               //某个格子当前的液滴标号
-    QMap<int, bool> histDrop[MAXN][MAXN];  //某个格子被哪些液滴曾经过
+    QMap<int, int> histDrop[MAXN][MAXN];   //某个格子被某液滴经过了多少次
     QList<QColor> dropColor;               //记录每个液滴的颜色
+    QPoint midState[MAXN][MAXN];           //标记中间结点，第一个参数为0表示不在中间状态，为1表示正在分裂，为2表示正在合并，
+                                           //第二个参数为1表示水平中间结点，2表示垂直中间结点
+    bool notAlone[MAXN][MAXN];             //标记不单独画出的格子
     QPoint leftUp;
     void paintEvent(QPaintEvent *);
 };
