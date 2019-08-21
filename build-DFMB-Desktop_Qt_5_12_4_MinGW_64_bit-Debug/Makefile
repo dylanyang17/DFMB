@@ -234,8 +234,10 @@ Makefile: ../DFMB/DFMB.pro C:/Applications/QT/Qt5.12.4/5.12.4/mingw73_64/mkspecs
 		C:/Applications/QT/Qt5.12.4/5.12.4/mingw73_64/mkspecs/features/yacc.prf \
 		C:/Applications/QT/Qt5.12.4/5.12.4/mingw73_64/mkspecs/features/lex.prf \
 		../DFMB/DFMB.pro \
+		C:/Applications/QT/Qt5.12.4/5.12.4/mingw73_64/lib/Qt5Multimedia.prl \
 		C:/Applications/QT/Qt5.12.4/5.12.4/mingw73_64/lib/Qt5Widgets.prl \
 		C:/Applications/QT/Qt5.12.4/5.12.4/mingw73_64/lib/Qt5Gui.prl \
+		C:/Applications/QT/Qt5.12.4/5.12.4/mingw73_64/lib/Qt5Network.prl \
 		C:/Applications/QT/Qt5.12.4/5.12.4/mingw73_64/lib/Qt5Core.prl \
 		C:/Applications/QT/Qt5.12.4/5.12.4/mingw73_64/lib/qtmain.prl
 	$(QMAKE) -o Makefile ..\DFMB\DFMB.pro -spec win32-g++ "CONFIG+=debug" "CONFIG+=qml_debug"
@@ -410,8 +412,10 @@ C:/Applications/QT/Qt5.12.4/5.12.4/mingw73_64/mkspecs/features/exceptions.prf:
 C:/Applications/QT/Qt5.12.4/5.12.4/mingw73_64/mkspecs/features/yacc.prf:
 C:/Applications/QT/Qt5.12.4/5.12.4/mingw73_64/mkspecs/features/lex.prf:
 ../DFMB/DFMB.pro:
+C:/Applications/QT/Qt5.12.4/5.12.4/mingw73_64/lib/Qt5Multimedia.prl:
 C:/Applications/QT/Qt5.12.4/5.12.4/mingw73_64/lib/Qt5Widgets.prl:
 C:/Applications/QT/Qt5.12.4/5.12.4/mingw73_64/lib/Qt5Gui.prl:
+C:/Applications/QT/Qt5.12.4/5.12.4/mingw73_64/lib/Qt5Network.prl:
 C:/Applications/QT/Qt5.12.4/5.12.4/mingw73_64/lib/Qt5Core.prl:
 C:/Applications/QT/Qt5.12.4/5.12.4/mingw73_64/lib/qtmain.prl:
 qmake: FORCE

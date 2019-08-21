@@ -5,6 +5,7 @@
 #include <QString>
 #include <QList>
 #include <QMap>
+#include <QSound>
 #include <QTimer>
 #include <QStack>
 #include "setdfmbdialog.h"
@@ -88,6 +89,10 @@ private:
     SetDFMBDialog *setdfmbdialog;
 
     int gridSize, col, row, timeLim, timeNow, dropCnt;
+    const QString soundDir="res\\", soundMovePath=soundDir+"move.wav",
+            soundSplit1Path=soundDir+"split1.wav", soundSplit2Path=soundDir+"split2.wav",
+            soundMergePath=soundDir+"merge.wav";
+    QSound *soundMove, *soundSplit1, *soundSplit2, *soundMerge;
     QString inPortStr, outPortStr, filePath;
     QList<Instruction> instructions[MAXTIME+5];
     int nowDrop[MAXN][MAXN];               //某个格子当前的液滴标号

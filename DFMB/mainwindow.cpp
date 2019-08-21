@@ -13,6 +13,7 @@
 #include <QTimer>
 #include <cmath>
 #include <QException>
+#include <QSound>
 #include <algorithm>
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -20,6 +21,10 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    soundMove = new QSound(soundMovePath);
+    soundSplit1 = new QSound(soundSplit1Path);
+    soundSplit2 = new QSound(soundSplit2Path);
+    soundMerge = new QSound(soundMergePath);
     gridSize=40;
     filePath="./";
     leftUp=QPoint(60,105);
@@ -242,7 +247,7 @@ int MainWindow::newDrop(int type=0, QColor a=QColor(0,0,0), QColor b=QColor(0,0,
             dropColor.append(QColor((a.red()+b.red())/2,(a.green()+b.green())/2,(a.blue()+b.blue())/2));
         }
         else    dropColor.append(QColor(qrand()%200+25,qrand()%200+25,qrand()%200+25));
-    }
+    } else if(type==1) ++dropCnt;
     debugDrop(dropCnt);
     return dropCnt;
 }
@@ -311,7 +316,7 @@ int  MainWindow::parseLine(QString str){
                 inst.arg[2]=now.x();
                 inst.arg[3]=now.y();
                 if(time+i/2>MAXTIME) return -1;
-                instructions[time+i/2].append(inst) ;
+                instructions[time+i/2-1].append(inst) ;
             }
             last=now;
         }
@@ -453,6 +458,7 @@ int MainWindow::getMidState(int x1, int y1, int x2, int y2){
 
 void MainWindow::instMove(int x1, int y1,int x2, int y2, bool rev){
     //从x1,y1移动到x2,y2，rev为true时表明撤销移动
+    if(ui->actionSound->isChecked()) soundMove->play();
     if(!rev) {
         int drop=nowDrop[x1][y1];
         nowDrop[x2][y2] = drop ;
@@ -469,6 +475,7 @@ void MainWindow::instMove(int x1, int y1,int x2, int y2, bool rev){
 
 void MainWindow::instSplit1(int x1, int y1,int x2, int y2, int x3, int y3, bool rev){
     //从x1,y1分裂到x2,y2和x3,y3，rev为true时表明撤销分裂的首步
+    if(ui->actionSound->isChecked()) soundSplit1->play();
     if(!rev){
         nowDrop[x2][y2] = newDrop(1, dropColor.at(nowDrop[x1][y1]-1))-1;
         nowDrop[x3][y3] = dropCnt;
@@ -504,6 +511,7 @@ void MainWindow::instMerge1(int x1, int y1, int x2, int y2, int x3, int y3, bool
 
 void MainWindow::instSplit2(int x1, int y1,int x2, int y2, int x3, int y3, bool rev){
     //从x1,y1分裂到x2,y2和x3,y3，rev为true时表明撤销分裂的第二步
+    if(ui->actionSound->isChecked()) soundSplit2->play();
     if(!rev){
         disapDropStack.push(nowDrop[x1][y1]);
         nowDrop[x1][y1]=0;
@@ -519,6 +527,7 @@ void MainWindow::instSplit2(int x1, int y1,int x2, int y2, int x3, int y3, bool 
 
 void MainWindow::instMerge2(int x1, int y1, int x2, int y2, int x3, int y3, bool rev){
     //从x1,y1和x2,y2合并到x3,y3，rev为true是表示撤销合并的第二步
+   if(ui->actionSound->isChecked()) soundMerge->play();
     if(!rev){
         disapDropStack.push(nowDrop[x1][y1]);
         disapDropStack.push(nowDrop[x2][y2]);
