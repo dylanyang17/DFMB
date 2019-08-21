@@ -27,12 +27,40 @@ MainWindow::MainWindow(QWidget *parent) :
     debugOn=true;
     timerPlayAll=new QTimer(this);
     connect(timerPlayAll, SIGNAL(timeout()), this, SLOT(on_actionNextStep_triggered()));
+    debugPreLoad();
+    init();
     repaint();
+}
+
+void MainWindow::debugPreLoad()
+{
+    if(debugOn){
+        int T=1;
+        if(T==1){
+            col=4;row=6;
+            inPortStr="4,6;1,6";
+            outPortStr="4,5";
+            filePath=tr("E:/作业及课件/大二小学期/作业/贵系程设/Week1/Week1/Input/testcase1.txt");
+        }
+        parsePortStr(inPortStr, col, row);
+        inPortList=tmpList;
+        parsePortStr(outPortStr, col, row);
+        outPortList=tmpList;
+        ui->labelFileName->setText(filePath.mid(filePath.lastIndexOf('/')+1,filePath.length()));
+        parseFile();
+    }
 }
 
 void MainWindow::debug(QString s){
     if(debugOn){
         qDebug() << s;
+    }
+}
+
+void MainWindow::debugDrop(int drop){
+    if(debugOn){
+        qDebug() << QString("drop: %1 RGB:(%2,%3,%4)").arg(drop).arg(dropColor.at(drop-1).red())
+              .arg(dropColor.at(drop-1).green()).arg(dropColor.at(drop-1).blue());
     }
 }
 
@@ -174,22 +202,52 @@ void MainWindow::paintEvent(QPaintEvent *event){
     //液滴
     for(int i=1;i<=col;++i){
         for(int j=1;j<=row;++j){
-            if(nowDrop[i][j]){
+            if(nowDrop[i][j] && !notAlone[i][j] && !midState[i][j].x()){
                 painter.setBrush(QBrush(dropColor.at(nowDrop[i][j]-1),Qt::SolidPattern));
                 tmp = getPoint(i,j) ;
                 painter.drawEllipse(tmp.x(),tmp.y(),gridSize,gridSize) ;
+            } else if(midState[i][j].x()){
+                painter.setBrush(QBrush(dropColor.at(nowDrop[i][j]-1),Qt::SolidPattern));
+                if(midState[i][j].y()==1){
+                    tmp = getPoint(i-1,j) ;
+                    painter.drawEllipse(tmp.x()+gridSize/2, tmp.y(), gridSize*2, gridSize);
+                } else{
+                    tmp = getPoint(i,j-1) ;
+                    painter.drawEllipse(tmp.x(), tmp.y()+gridSize/2, gridSize, gridSize*2);
+                }
             }
         }
     }
 }
 
-int MainWindow::newDrop(){
+int rd(int l,int r){
+    return qrand()%(r-l+1)+l;
+}
+
+int MainWindow::newDrop(int type=0, QColor a=QColor(0,0,0), QColor b=QColor(0,0,0)){
     //返回++dropCnt，注意可能产生新颜色
+    //type==0时为随机产生新颜色，type==1时为分裂a产生两种颜色，type==2时为合并a、b产生一种颜色
     ++dropCnt;
-    debug(QString("dropCnt: %1\n").arg(dropCnt));
     if(dropColor.length()<dropCnt){
-        dropColor.append(QColor(qrand()%230,qrand()%230,qrand()%230));
+        if(type==1){
+            int tmpRGB[3], newRGB1[3], newRGB2[3];
+            tmpRGB[0]=a.red(), tmpRGB[1]=a.green(), tmpRGB[2]=a.blue();
+            for(int i=0;i<3;++i){
+                int tmp=tmpRGB[i];
+                int rang=rd(0,std::min(tmp-20,230-tmp));
+                newRGB1[i]=tmpRGB[i]-rang;
+                newRGB2[i]=tmpRGB[i]+rang;
+                if(rd(0,1)) std::swap(newRGB1[i],newRGB2[i]);
+            }
+            dropColor.append(QColor(newRGB1[0],newRGB1[1],newRGB1[2]));
+            dropColor.append(QColor(newRGB2[0],newRGB2[1],newRGB2[2]));
+            debugDrop(dropCnt++);
+        } else if(type==2){
+            dropColor.append(QColor((a.red()+b.red())/2,(a.green()+b.green())/2,(a.blue()+b.blue())/2));
+        }
+        else    dropColor.append(QColor(qrand()%200+25,qrand()%200+25,qrand()%200+25));
     }
+    debugDrop(dropCnt);
     return dropCnt;
 }
 
@@ -357,8 +415,8 @@ void MainWindow::instMove(int x1, int y1,int x2, int y2, bool rev){
 void MainWindow::instSplit1(int x1, int y1,int x2, int y2, int x3, int y3, bool rev){
     //从x1,y1分裂到x2,y2和x3,y3，rev为true时表明撤销分裂的首步
     if(!rev){
-        nowDrop[x2][y2] = newDrop();
-        nowDrop[x3][y3] = newDrop();
+        nowDrop[x2][y2] = newDrop(1, dropColor.at(nowDrop[x1][y1]-1))-1;
+        nowDrop[x3][y3] = dropCnt;
         histDrop[x2][y2][nowDrop[x2][y2]] = histDrop[x2][y2][nowDrop[x2][y2]]+1;
         histDrop[x3][y3][nowDrop[x3][y3]] = histDrop[x3][y3][nowDrop[x3][y3]]+1;
         notAlone[x2][y2] = notAlone[x3][y3] = true;
@@ -376,7 +434,7 @@ void MainWindow::instSplit1(int x1, int y1,int x2, int y2, int x3, int y3, bool 
 void MainWindow::instMerge1(int x1, int y1, int x2, int y2, int x3, int y3, bool rev){
     //从x1,y1和x2,y2合并到x3,y3，rev为true是表示撤销合并的首步
     if(!rev){
-        nowDrop[x3][y3] = newDrop();
+        nowDrop[x3][y3] = newDrop(2, dropColor.at(nowDrop[x1][y1]-1), dropColor.at(nowDrop[x2][y2]-1));
         histDrop[x3][y3][nowDrop[x3][y3]] = histDrop[x3][y3][nowDrop[x3][y3]]+1;
         notAlone[x1][y1] = notAlone[x2][y2] = true;
         midState[x3][y3] = QPoint(2,getMidState(x2,y2,x3,y3));

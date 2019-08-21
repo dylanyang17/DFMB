@@ -53,7 +53,7 @@ public:
     int parseLine(QString str);
     void toIntError(bool ok);
     void init();
-    int newDrop();
+    int newDrop(int type, QColor a, QColor b);
     int getMidState(int x1, int y1, int x2, int y2);
     void handleMid(bool rev);
     void instMove(int x1, int y1, int x2, int y2, bool rev);
@@ -65,6 +65,7 @@ public:
     void instSplit2(int x1, int y1, int x2, int y2, int x3, int y3, bool rev);
     void instMerge2(int x1, int y1, int x2, int y2, int x3, int y3, bool rev);
     void debug(QString s);
+    void debugDrop(int drop);
 private slots:
 
     void on_actionSetDFMB_triggered();
@@ -98,6 +99,7 @@ private:
     QPoint leftUp;
     QTimer *timerPlayAll;
     void paintEvent(QPaintEvent *);
+    void debugPreLoad();
 };
 
 #endif // MAINWINDOW_H

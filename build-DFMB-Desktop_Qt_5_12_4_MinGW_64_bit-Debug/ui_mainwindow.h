@@ -196,7 +196,13 @@ public:
     {
         MainWindow->setWindowTitle(QApplication::translate("MainWindow", "DFMB\346\250\241\346\213\237\347\263\273\347\273\237", nullptr));
         actionReset->setText(QApplication::translate("MainWindow", "\345\244\215\344\275\215", nullptr));
+#ifndef QT_NO_SHORTCUT
+        actionReset->setShortcut(QApplication::translate("MainWindow", "F1", nullptr));
+#endif // QT_NO_SHORTCUT
         actionOpenFile->setText(QApplication::translate("MainWindow", "\346\211\223\345\274\200\346\226\207\344\273\266", nullptr));
+#ifndef QT_NO_SHORTCUT
+        actionOpenFile->setShortcut(QApplication::translate("MainWindow", "Ctrl+O", nullptr));
+#endif // QT_NO_SHORTCUT
         actionPreviousStep->setText(QApplication::translate("MainWindow", "\344\270\212\344\270\200\346\255\245", nullptr));
 #ifndef QT_NO_SHORTCUT
         actionPreviousStep->setShortcut(QApplication::translate("MainWindow", "F3", nullptr));
@@ -213,6 +219,9 @@ public:
         actionWash->setText(QApplication::translate("MainWindow", "\346\270\205\346\264\227", nullptr));
         actionSetDFMB->setText(QApplication::translate("MainWindow", "DFMB\350\256\276\347\275\256", nullptr));
         actionPause->setText(QApplication::translate("MainWindow", "\346\232\202\345\201\234\346\222\255\346\224\276", nullptr));
+#ifndef QT_NO_SHORTCUT
+        actionPause->setShortcut(QApplication::translate("MainWindow", "F2", nullptr));
+#endif // QT_NO_SHORTCUT
         label->setText(QApplication::translate("MainWindow", "\345\275\223\345\211\215\346\226\207\344\273\266:", nullptr));
         labelFileName->setText(QApplication::translate("MainWindow", "\347\251\272", nullptr));
         label_3->setText(QApplication::translate("MainWindow", "\345\275\223\345\211\215\346\227\266\351\227\264:", nullptr));
