@@ -185,6 +185,7 @@ void MainWindow::init(){
     memset(notAlone,0,sizeof(notAlone));
     memset(midState,0,sizeof(midState));
     memset(nowDrop,0,sizeof(nowDrop));
+    outDropStack.clear();
     for(int i=1;i<=col;++i){
         for(int j=1;j<=row;++j){
             histDrop[i][j].clear();
@@ -322,16 +323,79 @@ void MainWindow::handleMid(bool rev){
     //处理中间态，当rev为true时逆向处理中间态
 }
 
-void MainWindow::instMove(int x1, int y1,int x2, int y2){
-    //从x1,y1移动到x2,y2
+void MainWindow::instMove(int x1, int y1,int x2, int y2, bool rev){
+    //从x1,y1移动到x2,y2，rev为true时表明撤销移动
+    if(rev) {
+        std::swap(x1,x2); std::swap(y1,y2);
+    }
     int drop=nowDrop[x1][y1];
     nowDrop[x2][y2] = drop ;
     nowDrop[x1][y1] = 0;
-    histDrop[x2][y2][drop] = histDrop[x2][y2][drop]+1;
+    if(!rev) histDrop[x2][y2][drop] = histDrop[x2][y2][drop]+1;
+    else histDrop[x1][y1][drop] = histDrop[x1][y1][drop]-1;
 }
 
-void MainWindow::instSplit(int x1, int y1,int x2, int y2, int x3, int y3){
-    //从x1,y1分裂到x2,y2和x3,y3
+void MainWindow::instSplit(int x1, int y1,int x2, int y2, int x3, int y3, bool rev){
+    //从x1,y1分裂到x2,y2和x3,y3，rev为true时表明撤销分裂的首步
+    if(!rev){
+        nowDrop[x2][y2] = newDrop();
+        nowDrop[x3][y3] = newDrop();
+        histDrop[x2][y2][nowDrop[x2][y2]] = histDrop[x2][y2][nowDrop[x2][y2]]+1;
+        histDrop[x3][y3][nowDrop[x3][y3]] = histDrop[x3][y3][nowDrop[x3][y3]]+1;
+        notAlone[x2][y2] = notAlone[x3][y3] = true;
+        midState[x1][y1] = QPoint(1, getMidState(x1,y1,x2,y2));
+    } else{
+        midState[x1][y1] = QPoint(0,0);
+        notAlone[x2][y2] = notAlone[x3][y3] = false;
+        histDrop[x3][y3][nowDrop[x3][y3]] = histDrop[x3][y3][nowDrop[x3][y3]]-1;
+        histDrop[x2][y2][nowDrop[x2][y2]] = histDrop[x2][y2][nowDrop[x2][y2]]-1;
+        nowDrop[x2][y2] = nowDrop[x3][y3] = 0;
+        dropCnt-=2;
+    }
+}
+
+void MainWindow::instMerge(int x1, int y1, int x2, int y2, int x3, int y3, bool rev){
+    //从x1,y1和x2,y2合并到x3,y3，rev为true是表示撤销合并的首步
+    if(!rev){
+        nowDrop[x3][y3] = newDrop();
+        histDrop[x3][y3][nowDrop[x3][y3]] = histDrop[x3][y3][nowDrop[x3][y3]]+1;
+        notAlone[x1][y1] = notAlone[x2][y2] = true;
+        midState[x3][y3] = QPoint(2,getMidState(x2,y2,x3,y3));
+    } else{
+        midState[x3][y3] = QPoint(0,0);
+        notAlone[x1][y1] = notAlone[x2][y2] = false;
+        histDrop[x3][y3][nowDrop[x3][y3]] = histDrop[x3][y3][nowDrop[x3][y3]]-1;
+        nowDrop[x3][y3] = 0;
+        dropCnt--;
+    }
+}
+
+int MainWindow::instInput(int x1, int y1, bool rev){
+    //输入到x1,y1，rev为true表示撤销输入
+    if(inPortList.indexOf(QPoint(x1,y1))==-1)
+        return -1;
+    if(!rev){
+        nowDrop[x1][y1] = newDrop();
+        histDrop[x1][y1][nowDrop[x1][y1]] = histDrop[x1][y1][nowDrop[x1][y1]]+1;
+    } else {
+        histDrop[x1][y1][nowDrop[x1][y1]] = histDrop[x1][y1][nowDrop[x1][y1]]-1;
+        nowDrop[x1][y1] = 0;
+    }
+    return 0;
+}
+
+int MainWindow::instOutput(int x1, int y1, bool rev){
+    //从x1,y1输出，rev为true表示撤销输出
+    if(outPortList.indexOf(QPoint(x1,y1))==-1)
+        return -1;
+    if(!rev){
+        outDropStack.push(nowDrop[x1][y1]);
+        nowDrop[x1][y1] = 0;
+    } else{
+        nowDrop[x1][y1] = outDropStack.top();
+        outDropStack.pop();
+    }
+    return 0;
 }
 
 void MainWindow::on_actionNextStep_triggered()
@@ -340,34 +404,29 @@ void MainWindow::on_actionNextStep_triggered()
         return;
     Instruction inst;
     //处理midState TODO
-
+    handleMid(false);
 
     //处理指令
     for(int i=0;i<instructions[timeNow].length();++i){
         inst = instructions[timeNow].at(i);
         if(inst.opt==1){
             int x1=inst.arg[0], y1=inst.arg[1], x2=inst.arg[2], y2=inst.arg[3];
-            instMove(x1,y1,x2,y2);
+            instMove(x1,y1,x2,y2,false);
         } else if(inst.opt==2){
             int x1=inst.arg[0], y1=inst.arg[1], x2=inst.arg[2], y2=inst.arg[3],
                     x3=inst.arg[4], y3=inst.arg[5];
-            int drop=nowDrop[x1][y1] ;
-            nowDrop[x2][y2] = newDrop();
-            nowDrop[x3][y3] = newDrop();
-            notAlone[x2][y2] = true;
-            notAlone[x3][y3] = true;
-            midState[x1][y1].setX();
-            midState[x1][y1].setY(getMidState(x1,y1,x2,y2));
+            instSplit(x1,y1,x2,y2,x3,y3,false);
         } else if(inst.opt==3){
             int x1=inst.arg[0], y1=inst.arg[1], x2=inst.arg[2], y2=inst.arg[3],
-                    x3=(x1+x2)/2, y3=(y1+y2)/2;
-
+                 x3=(x1+x2)/2, y3=(y1+y2)/2;
+            instMerge(x1,y1,x2,y2,x3,y3,false);
         } else if(inst.opt==4){
-
+            int x1=inst.arg[0], y1=inst.arg[1];
+            instInput(x1,y1,false);
         } else if(inst.opt==5){
-
+            int x1=inst.arg[0], y1=inst.arg[1];
+            instOutput(x1,y1,false);
         }
-        //TODO!!!!!!!
     }
     ui->labelCurTime->setNum(++timeNow);
 }
