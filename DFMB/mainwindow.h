@@ -40,7 +40,7 @@ public:
     void setRow(int row);
     void setInPortStr(QString inPortStr);
     void setOutPortStr(QString outPortStr);
-    int parsePortStr(QString portStr) ;
+    int parsePortStr(QString portStr, int col, int row) ;
     QList<QPoint> tmpList;
     QList<QPoint> inPortList;
     QList<QPoint> outPortList;
@@ -69,6 +69,10 @@ private slots:
     void on_actionOpenFile_triggered();
 
     void on_actionNextStep_triggered();
+
+    void on_actionPreviousStep_triggered();
+
+    void on_actionReset_triggered();
 
 private:
     Ui::MainWindow *ui;

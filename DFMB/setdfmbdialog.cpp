@@ -35,7 +35,7 @@ void SetDFMBDialog::on_buttonBox_accepted()
         this->show();
         return;
     }
-    int ret1 = mainWindow->parsePortStr(ui->lineEditInPort->text());
+    int ret1 = mainWindow->parsePortStr(ui->lineEditInPort->text(), col, row);
     if(ret1==-1){
         QMessageBox::critical(this, "参数错误", "输入端口格式错误");
         this->show();
@@ -57,7 +57,7 @@ void SetDFMBDialog::on_buttonBox_accepted()
         return;
     }
     QList<QPoint> inPortList=mainWindow->tmpList;
-    int ret2 = mainWindow->parsePortStr(ui->lineEditOutPort->text());
+    int ret2 = mainWindow->parsePortStr(ui->lineEditOutPort->text(), col, row);
     if(ret2==-1){
         QMessageBox::critical(this, "参数错误", "输出端口格式错误");
         this->show();

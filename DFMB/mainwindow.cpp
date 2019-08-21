@@ -49,8 +49,10 @@ QPoint MainWindow::getEdgeInd(QPoint p){
         return QPoint(x,y+1);
     else if(y==1)
         return QPoint(x,y-1);
-
-    else assert(0);
+    else {
+        assert(0);
+        return QPoint(-1,-1);
+    }
 }
 
 int MainWindow::getCol()
@@ -93,7 +95,7 @@ void MainWindow::setOutPortStr(QString outPortStr)
     this->outPortStr = outPortStr;
 }
 
-int MainWindow::parsePortStr(QString portStr)
+int MainWindow::parsePortStr(QString portStr, int col, int row)
 {
     // 解析表示端口的字符串，存储到tmpList这个成员变量中，类型为QList<QPoint>。返回-1表示解析出错，-2表示数字范围出错，否则返回长度
     if(portStr==""){
@@ -162,7 +164,7 @@ void MainWindow::paintEvent(QPaintEvent *event){
     for(int i=1;i<=col;++i){
         for(int j=1;j<=row;++j){
             if(nowDrop[i][j]){
-                painter.setBrush(QBrush(dropColor.at(nowDrop[i][j]),Qt::SolidPattern));
+                painter.setBrush(QBrush(dropColor.at(nowDrop[i][j]-1),Qt::SolidPattern));
                 tmp = getPoint(i,j) ;
                 painter.drawEllipse(tmp.x(),tmp.y(),gridSize,gridSize) ;
             }
@@ -173,6 +175,7 @@ void MainWindow::paintEvent(QPaintEvent *event){
 int MainWindow::newDrop(){
     //返回++dropCnt，注意可能产生新颜色
     ++dropCnt;
+    qDebug() << dropCnt << '\n';
     if(dropColor.length()<dropCnt){
         dropColor.append(QColor(qrand()%230,qrand()%230,qrand()%230));
     }
@@ -182,17 +185,19 @@ int MainWindow::newDrop(){
 void MainWindow::init(){
     //TODO!!!!!!!!!!!!!!!!做整个系统的初始化
     qsrand(time(NULL));
+    timeNow=0;
     dropCnt=0;
     memset(notAlone,0,sizeof(notAlone));
     memset(midState,0,sizeof(midState));
     memset(nowDrop,0,sizeof(nowDrop));
-    outDropStack.clear();
+    disapDropStack.clear();
     for(int i=1;i<=col;++i){
         for(int j=1;j<=row;++j){
             histDrop[i][j].clear();
         }
     }
     dropColor.clear();
+    repaint();
 }
 
 int  MainWindow::parseLine(QString str){
@@ -388,6 +393,20 @@ void MainWindow::instSplit2(int x1, int y1,int x2, int y2, int x3, int y3, bool 
 
 void MainWindow::instMerge2(int x1, int y1, int x2, int y2, int x3, int y3, bool rev){
     //从x1,y1和x2,y2合并到x3,y3，rev为true是表示撤销合并的第二步
+    if(!rev){
+        disapDropStack.push(nowDrop[x1][y1]);
+        disapDropStack.push(nowDrop[x2][y2]);
+        nowDrop[x1][y1]=nowDrop[x2][y2]=0;
+        notAlone[x1][y1]=notAlone[x2][y2]=false;
+        midState[x3][y3]=QPoint(0,0);
+    } else {
+        midState[x3][y3]=QPoint(2,getMidState(x2,y2,x3,y3));
+        notAlone[x1][y1]=notAlone[x2][y2]=true;
+        nowDrop[x2][y2]=disapDropStack.top();
+        disapDropStack.pop();
+        nowDrop[x1][y1]=disapDropStack.top();
+        disapDropStack.pop();
+    }
 }
 
 int MainWindow::instInput(int x1, int y1, bool rev){
@@ -418,16 +437,6 @@ int MainWindow::instOutput(int x1, int y1, bool rev){
     return 0;
 }
 
-void MainWindow::handleMid(bool rev){
-    //处理中间态，当rev为true时逆向处理中间态（即生成中间态）
-    if(!rev){
-        for(int i=0;i<instructions[timeNow-1].length();++i){
-            Instruction inst = instructions[timeNow-1].at(i);
-            //TODO
-        }
-    }
-}
-
 void MainWindow::handleInst(Instruction inst, bool rev){
     //处理指令，rev为true表示撤销指令
     if(inst.opt==1){
@@ -449,6 +458,42 @@ void MainWindow::handleInst(Instruction inst, bool rev){
         int x1=inst.arg[0], y1=inst.arg[1];
         if(instOutput(x1,y1,rev)==-1)
             throw 2;
+    } else if(inst.opt==6){
+        int x1=inst.arg[0], y1=inst.arg[1], x2=inst.arg[2], y2=inst.arg[3],
+                x3=inst.arg[4], y3=inst.arg[5];
+        instSplit2(x1,y1,x2,y2,x3,y3,rev);
+    } else if(inst.opt==7){
+        int x1=inst.arg[0], y1=inst.arg[1], x2=inst.arg[2], y2=inst.arg[3],
+             x3=(x1+x2)/2, y3=(y1+y2)/2;
+        instMerge2(x1,y1,x2,y2,x3,y3,rev);
+    }
+}
+
+void MainWindow::handleMid(bool rev){
+    //处理中间态，当rev为true时逆向处理中间态（即生成中间态）
+    if(timeNow==0) return;
+    if(!rev){
+        for(int i=0;i<instructions[timeNow-1].length();++i){
+            Instruction inst = instructions[timeNow-1].at(i);
+            if(inst.opt==2){
+                inst.opt=6;
+                handleInst(inst, rev);
+            } else if(inst.opt==3){
+                inst.opt=7;
+                handleInst(inst, rev);
+            }
+        }
+    } else{
+        for(int i=instructions[timeNow-1].length()-1;i>=0;--i){
+            Instruction inst = instructions[timeNow-1].at(i);
+            if(inst.opt==2){
+                inst.opt=6;
+                handleInst(inst, rev);
+            } else if(inst.opt==3){
+                inst.opt=7;
+                handleInst(inst, rev);
+            }
+        }
     }
 }
 
@@ -457,7 +502,7 @@ void MainWindow::on_actionNextStep_triggered()
     if(timeNow==timeLim)
         return;
     Instruction inst;
-    //处理midState TODO
+    //处理midState（实际上一个更优的做法是直接把合并和分裂都拆成两条来做）
     handleMid(false);
 
     //处理指令
@@ -479,4 +524,28 @@ void MainWindow::on_actionNextStep_triggered()
     }
 
     ui->labelCurTime->setNum(++timeNow);
+    repaint();
+}
+
+void MainWindow::on_actionPreviousStep_triggered()
+{
+    if(timeNow==0)
+        return;
+    Instruction inst;
+    ui->labelCurTime->setNum(--timeNow);
+
+    //处理指令
+    int now;
+    for(now=instructions[timeNow].length()-1;now>=0;--now){
+        handleInst(instructions[timeNow].at(now), true);
+    }
+
+    //处理midState
+    handleMid(true);
+    repaint();
+}
+
+void MainWindow::on_actionReset_triggered()
+{
+    init();
 }
