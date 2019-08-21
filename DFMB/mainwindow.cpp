@@ -65,13 +65,9 @@ void MainWindow::debugDrop(int drop){
 }
 
 QPoint MainWindow::getPoint(int a, int b){
-    //获得网格点的坐标，a=1且b=1时为左上角的网格点，a增大则向右移动
+    //获得网格点的坐标，a=1且b=1时为左下角的网格点，a增大则向右移动，b增大则向上移动
+    b=row+2-b; //坐标变换
     return QPoint((a-1)*gridSize+leftUp.x(), (b-1)*gridSize+leftUp.y());
-}
-
-QPoint MainWindow::getMidPoint(int a, int b){
-    //获得网格中心点的坐标
-    return QPoint((2*a-1)*gridSize/2+leftUp.x(), (2*b-1)*gridSize/2+leftUp.y());
 }
 
 QPoint MainWindow::getEdgeInd(QPoint p){
@@ -135,7 +131,6 @@ void MainWindow::setOutPortStr(QString outPortStr)
 int MainWindow::parsePortStr(QString portStr, int col, int row)
 {
     // 解析表示端口的字符串，存储到tmpList这个成员变量中，类型为QList<QPoint>。返回-1表示解析出错，-2表示数字范围出错，否则返回长度
-    // !!!!特别注意输入文本的坐标y值与代码中坐标y值不同！用row-y+1即可得到实际y
     if(portStr==""){
         return 0;
     }
@@ -150,7 +145,6 @@ int MainWindow::parsePortStr(QString portStr, int col, int row)
         int x=strList2.at(0).toInt(&ok);
         if(!ok) return -1;
         int y=strList2.at(1).toInt(&ok);
-        y = row-y+1; //坐标变换
         if(!ok) return -1;
         if(x<1 || x>col || y<1 || y>row) return -2;
         tmpList.append(QPoint(x,y));
@@ -159,6 +153,7 @@ int MainWindow::parsePortStr(QString portStr, int col, int row)
 }
 
 void MainWindow::paintEvent(QPaintEvent *event){
+    //坐标变换在绘图时实现，其它时候都是按照题目的坐标来做的
     QPainter painter(this) ;
     painter.setRenderHint(QPainter::Antialiasing, true); // 抗锯齿
 
@@ -169,7 +164,7 @@ void MainWindow::paintEvent(QPaintEvent *event){
             if(j!=row+1) painter.drawLine(getPoint(i,j),getPoint(i,j+1));
         }
     }
-    QPoint tmp = getPoint(col+1,row+1);
+    QPoint tmp = getPoint(col+1,1);
     this->setMinimumSize(tmp.x()+60, tmp.y()+60);
     this->setMaximumSize(tmp.x()+60, tmp.y()+60);
 
@@ -178,25 +173,25 @@ void MainWindow::paintEvent(QPaintEvent *event){
     for(int i=0;i<inPortList.length();++i){
         tmp = inPortList.at(i);
         tmp = getEdgeInd(tmp);
-        tmp = getPoint(tmp.x(),tmp.y()) ;
+        tmp = getPoint(tmp.x(),tmp.y()+1) ;
         painter.drawRoundRect(tmp.x(),tmp.y(),gridSize,gridSize);
     }
     painter.setBrush(QBrush(Qt::blue,Qt::SolidPattern));
     for(int i=0;i<outPortList.length();++i){
         tmp = outPortList.at(i);
         tmp = getEdgeInd(tmp);
-        tmp = getPoint(tmp.x(),tmp.y()) ;
+        tmp = getPoint(tmp.x(),tmp.y()+1) ;
         painter.drawRoundRect(tmp.x(),tmp.y(),gridSize,gridSize);
     }
 
     //清洗液滴的端口
     painter.setBrush(QBrush(QColor(100,50,80),Qt::SolidPattern));
-    tmp = getEdgeInd(QPoint(1,row));
-    tmp = getPoint(tmp.x(),tmp.y());
+    tmp = getEdgeInd(QPoint(1,1));
+    tmp = getPoint(tmp.x(),tmp.y()+1);
     painter.drawRoundRect(tmp.x(),tmp.y(),gridSize,gridSize);
     painter.setBrush(QBrush(QColor(50,80,120),Qt::SolidPattern));
-    tmp = getEdgeInd(QPoint(col,1));
-    tmp = getPoint(tmp.x(),tmp.y());
+    tmp = getEdgeInd(QPoint(col,row));
+    tmp = getPoint(tmp.x(),tmp.y()+1);
     painter.drawRoundRect(tmp.x(),tmp.y(),gridSize,gridSize);
 
     //液滴
@@ -204,15 +199,15 @@ void MainWindow::paintEvent(QPaintEvent *event){
         for(int j=1;j<=row;++j){
             if(nowDrop[i][j] && !notAlone[i][j] && !midState[i][j].x()){
                 painter.setBrush(QBrush(dropColor.at(nowDrop[i][j]-1),Qt::SolidPattern));
-                tmp = getPoint(i,j) ;
+                tmp = getPoint(i,j+1) ;
                 painter.drawEllipse(tmp.x(),tmp.y(),gridSize,gridSize) ;
             } else if(midState[i][j].x()){
                 painter.setBrush(QBrush(dropColor.at(nowDrop[i][j]-1),Qt::SolidPattern));
                 if(midState[i][j].y()==1){
-                    tmp = getPoint(i-1,j) ;
+                    tmp = getPoint(i-1,j+1) ;
                     painter.drawEllipse(tmp.x()+gridSize/2, tmp.y(), gridSize*2, gridSize);
                 } else{
-                    tmp = getPoint(i,j-1) ;
+                    tmp = getPoint(i,j) ;
                     painter.drawEllipse(tmp.x(), tmp.y()+gridSize/2, gridSize, gridSize*2);
                 }
             }
@@ -305,7 +300,7 @@ int  MainWindow::parseLine(QString str){
 
             s = argList.at(i+1).simplified();
             if(s.endsWith(';')) s = s.left(s.length()-1);
-            now.setY(row+1-s.toInt(&ok));
+            now.setY(s.toInt(&ok));
             if(!ok) return -1;
 
             if(i!=1){
@@ -333,7 +328,6 @@ int  MainWindow::parseLine(QString str){
             if(s.endsWith(';')) s = s.left(s.length()-1);
             inst.arg[i-1] = s.toInt(&ok);
             if(!ok) return -1;
-            if(!(i&1)) inst.arg[i-1]=row+1-inst.arg[i-1];
         }
         if(time>MAXTIME) return -1;
         instructions[time].append(inst) ;
@@ -375,18 +369,78 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+bool isOnEdge(QPoint p, int col, int row);
+
+void MainWindow::autoSet(){
+    int maxCol=0, maxRow=0;
+    for(int i=0;i<=timeLim;++i){
+        for(int j=0;j<instructions[i].length();++j){
+            Instruction inst = instructions[i].at(j);
+            for(int k=0;k<6;k+=2)
+                maxCol=std::max(maxCol, inst.arg[k]);
+            for(int k=1;k<6;k+=2)
+                maxRow=std::max(maxRow, inst.arg[k]);
+        }
+    }
+    for(int i=0;i<=timeLim;++i){
+        for(int j=0;j<instructions[i].length();++j){
+            Instruction inst = instructions[i].at(j);
+            if(inst.opt==4 || inst.opt==5){
+                if(!isOnEdge(QPoint(inst.arg[0],inst.arg[1]),maxCol,maxRow)){
+                    QMessageBox::critical(this, "自动配置失败", QString("端口无法设定在边界上")) ;
+                    return ;
+                }
+            }
+        }
+    }
+    col=maxCol; row=maxRow;
+    inPortStr=outPortStr="";
+    inPortList.clear();
+    outPortList.clear();
+    for(int i=0;i<=timeLim;++i){
+        for(int j=0;j<instructions[i].length();++j){
+            Instruction inst = instructions[i].at(j);
+            if(inst.opt==4){
+                QPoint p=QPoint(inst.arg[0],inst.arg[1]);
+                if(inPortList.indexOf(p)==-1){
+                    inPortList.append(p);
+                    if(inPortList.length()>1) inPortStr=inPortStr+';';
+                    inPortStr=inPortStr+QString("%1,%2").arg(p.x()).arg(p.y());
+                }
+            } else if(inst.opt==5){
+                QPoint p=QPoint(inst.arg[0],inst.arg[1]);
+                if(outPortList.indexOf(p)==-1){
+                    if(outPortList.length()!=0){
+                        QMessageBox::critical(this, "自动配置失败", QString("出现多个输出端口")) ;
+                        return ;
+                    }
+                    outPortList.append(p);
+                    outPortStr=QString("%1,%2").arg(p.x()).arg(p.y());
+                }
+            }
+        }
+    }
+}
+
 void MainWindow::on_actionSetDFMB_triggered()
 {
     setdfmbdialog = new SetDFMBDialog(this, col, row, inPortStr, outPortStr, this);
     setdfmbdialog -> show();
 }
 
+void MainWindow::openFileWithPath(QString path){
+    ui->labelFileName->setText(path.mid(path.lastIndexOf('/')+1,path.length()));
+    parseFile();
+    if(ui->actionAutoSet->isChecked()){
+        autoSet();
+    }
+    init();
+}
+
 void MainWindow::on_actionOpenFile_triggered()
 {
     filePath = QFileDialog::getOpenFileName(this, "打开文件", "./", "All files (*.*)");
-    ui->labelFileName->setText(filePath.mid(filePath.lastIndexOf('/')+1,filePath.length()));
-    parseFile();
-    init();
+    openFileWithPath(filePath);
 }
 
 int MainWindow::getMidState(int x1, int y1, int x2, int y2){

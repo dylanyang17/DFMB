@@ -169,6 +169,7 @@
     </property>
     <addaction name="actionSound"/>
     <addaction name="actionWash"/>
+    <addaction name="actionAutoSet"/>
     <addaction name="separator"/>
     <addaction name="actionSetDFMB"/>
    </widget>
@@ -252,6 +253,17 @@
    </property>
    <property name="shortcut">
     <string>F2</string>
+   </property>
+  </action>
+  <action name="actionAutoSet">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>自动配置</string>
    </property>
   </action>
  </widget>

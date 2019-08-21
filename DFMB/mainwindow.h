@@ -47,7 +47,6 @@ public:
     QList<QPoint> inPortList;
     QList<QPoint> outPortList;
 
-    QPoint getMidPoint(int a, int b);
     QPoint getEdgeInd(QPoint p);
     void parseFile();
     int parseLine(QString str);
@@ -66,6 +65,8 @@ public:
     void instMerge2(int x1, int y1, int x2, int y2, int x3, int y3, bool rev);
     void debug(QString s);
     void debugDrop(int drop);
+    void autoSet();
+    void openFileWithPath(QString path);
 private slots:
 
     void on_actionSetDFMB_triggered();

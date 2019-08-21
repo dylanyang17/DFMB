@@ -37,6 +37,7 @@ public:
     QAction *actionWash;
     QAction *actionSetDFMB;
     QAction *actionPause;
+    QAction *actionAutoSet;
     QWidget *centralWidget;
     QGridLayout *gridLayout;
     QSpacerItem *verticalSpacer;
@@ -87,6 +88,10 @@ public:
         actionSetDFMB->setObjectName(QString::fromUtf8("actionSetDFMB"));
         actionPause = new QAction(MainWindow);
         actionPause->setObjectName(QString::fromUtf8("actionPause"));
+        actionAutoSet = new QAction(MainWindow);
+        actionAutoSet->setObjectName(QString::fromUtf8("actionAutoSet"));
+        actionAutoSet->setCheckable(true);
+        actionAutoSet->setChecked(true);
         centralWidget = new QWidget(MainWindow);
         centralWidget->setObjectName(QString::fromUtf8("centralWidget"));
         gridLayout = new QGridLayout(centralWidget);
@@ -184,6 +189,7 @@ public:
         menu->addAction(actionPause);
         menu_2->addAction(actionSound);
         menu_2->addAction(actionWash);
+        menu_2->addAction(actionAutoSet);
         menu_2->addSeparator();
         menu_2->addAction(actionSetDFMB);
 
@@ -222,6 +228,7 @@ public:
 #ifndef QT_NO_SHORTCUT
         actionPause->setShortcut(QApplication::translate("MainWindow", "F2", nullptr));
 #endif // QT_NO_SHORTCUT
+        actionAutoSet->setText(QApplication::translate("MainWindow", "\350\207\252\345\212\250\351\205\215\347\275\256", nullptr));
         label->setText(QApplication::translate("MainWindow", "\345\275\223\345\211\215\346\226\207\344\273\266:", nullptr));
         labelFileName->setText(QApplication::translate("MainWindow", "\347\251\272", nullptr));
         label_3->setText(QApplication::translate("MainWindow", "\345\275\223\345\211\215\346\227\266\351\227\264:", nullptr));
