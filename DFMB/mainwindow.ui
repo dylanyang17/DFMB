@@ -161,6 +161,7 @@
     <addaction name="actionPreviousStep"/>
     <addaction name="actionNextStep"/>
     <addaction name="actionPlayAll"/>
+    <addaction name="actionPause"/>
    </widget>
    <widget class="QMenu" name="menu_2">
     <property name="title">
@@ -188,10 +189,16 @@
    <property name="text">
     <string>复位</string>
    </property>
+   <property name="shortcut">
+    <string>F1</string>
+   </property>
   </action>
   <action name="actionOpenFile">
    <property name="text">
     <string>打开文件</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
    </property>
   </action>
   <action name="actionPreviousStep">
@@ -237,6 +244,14 @@
   <action name="actionSetDFMB">
    <property name="text">
     <string>DFMB设置</string>
+   </property>
+  </action>
+  <action name="actionPause">
+   <property name="text">
+    <string>暂停播放</string>
+   </property>
+   <property name="shortcut">
+    <string>F2</string>
    </property>
   </action>
  </widget>

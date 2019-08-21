@@ -25,6 +25,8 @@ MainWindow::MainWindow(QWidget *parent) :
     timeLim=timeNow=0;
     col=row=5;
     debugOn=true;
+    timerPlayAll=new QTimer(this);
+    connect(timerPlayAll, SIGNAL(timeout()), this, SLOT(on_actionNextStep_triggered()));
     repaint();
 }
 
@@ -195,6 +197,7 @@ void MainWindow::init(){
     //TODO!!!!!!!!!!!!!!!!做整个系统的初始化
     qsrand(time(NULL));
     ui->labelCurTime->setNum(timeNow=0);
+    on_actionPause_triggered();
     dropCnt=0;
     memset(notAlone,0,sizeof(notAlone));
     memset(midState,0,sizeof(midState));
@@ -510,8 +513,10 @@ void MainWindow::handleMid(bool rev){
 
 void MainWindow::on_actionNextStep_triggered()
 {
-    if(timeNow==timeLim)
+    if(timeNow==timeLim){
+        on_actionPause_triggered();
         return;
+    }
     Instruction inst;
     //处理midState（实际上一个更优的做法是直接把合并和分裂都拆成两条来做）
     handleMid(false);
@@ -561,4 +566,18 @@ void MainWindow::on_actionPreviousStep_triggered()
 void MainWindow::on_actionReset_triggered()
 {
     init();
+}
+
+void MainWindow::on_actionPlayAll_triggered()
+{
+    timerPlayAll->start(1000);
+    ui->actionNextStep->setEnabled(false);
+    ui->actionPreviousStep->setEnabled(false);
+}
+
+void MainWindow::on_actionPause_triggered()
+{
+    timerPlayAll->stop();
+    ui->actionNextStep->setEnabled(true);
+    ui->actionPreviousStep->setEnabled(true);
 }

@@ -36,6 +36,7 @@ public:
     QAction *actionSound;
     QAction *actionWash;
     QAction *actionSetDFMB;
+    QAction *actionPause;
     QWidget *centralWidget;
     QGridLayout *gridLayout;
     QSpacerItem *verticalSpacer;
@@ -84,6 +85,8 @@ public:
         actionWash->setCheckable(true);
         actionSetDFMB = new QAction(MainWindow);
         actionSetDFMB->setObjectName(QString::fromUtf8("actionSetDFMB"));
+        actionPause = new QAction(MainWindow);
+        actionPause->setObjectName(QString::fromUtf8("actionPause"));
         centralWidget = new QWidget(MainWindow);
         centralWidget->setObjectName(QString::fromUtf8("centralWidget"));
         gridLayout = new QGridLayout(centralWidget);
@@ -178,6 +181,7 @@ public:
         menu->addAction(actionPreviousStep);
         menu->addAction(actionNextStep);
         menu->addAction(actionPlayAll);
+        menu->addAction(actionPause);
         menu_2->addAction(actionSound);
         menu_2->addAction(actionWash);
         menu_2->addSeparator();
@@ -208,6 +212,7 @@ public:
         actionSound->setText(QApplication::translate("MainWindow", "\351\237\263\346\225\210", nullptr));
         actionWash->setText(QApplication::translate("MainWindow", "\346\270\205\346\264\227", nullptr));
         actionSetDFMB->setText(QApplication::translate("MainWindow", "DFMB\350\256\276\347\275\256", nullptr));
+        actionPause->setText(QApplication::translate("MainWindow", "\346\232\202\345\201\234\346\222\255\346\224\276", nullptr));
         label->setText(QApplication::translate("MainWindow", "\345\275\223\345\211\215\346\226\207\344\273\266:", nullptr));
         labelFileName->setText(QApplication::translate("MainWindow", "\347\251\272", nullptr));
         label_3->setText(QApplication::translate("MainWindow", "\345\275\223\345\211\215\346\227\266\351\227\264:", nullptr));

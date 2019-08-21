@@ -5,6 +5,7 @@
 #include <QString>
 #include <QList>
 #include <QMap>
+#include <QTimer>
 #include <QStack>
 #include "setdfmbdialog.h"
 
@@ -76,6 +77,10 @@ private slots:
 
     void on_actionReset_triggered();
 
+    void on_actionPlayAll_triggered();
+
+    void on_actionPause_triggered();
+
 private:
     Ui::MainWindow *ui;
     SetDFMBDialog *setdfmbdialog;
@@ -91,6 +96,7 @@ private:
     bool notAlone[MAXN][MAXN];             //标记不单独画出的格子
     QStack<int> disapDropStack;            //消失的液滴栈
     QPoint leftUp;
+    QTimer *timerPlayAll;
     void paintEvent(QPaintEvent *);
 };
 
