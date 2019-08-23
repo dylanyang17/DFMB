@@ -271,7 +271,8 @@ void MainWindow::paintEvent(QPaintEvent *event){
         //清洁液滴
         if(isWashing){
             int x=washPath.first().x(), y=washPath.first().y();
-            painter.setBrush(QBrush(QColor(20,20,200),Qt::SolidPattern));
+            QColor color=QColor(58,159,177) ;
+            painter.setBrush(QBrush(color,Qt::SolidPattern));
             tmp = getPoint(x,y+1) ;
             painter.drawEllipse(tmp.x(),tmp.y(),gridSize,gridSize) ;
         }
@@ -313,10 +314,11 @@ void MainWindow::init(){
     //TODO!!!!!!!!!!!!!!!!做整个系统的初始化
     qsrand(time(NULL));
     ui->labelCurTime->setNum(timeNow=0);
+    isWashing=false;
+    playingAll=false;
     timerPlayAll->stop();
     timerWash->stop();
     memset(ban, 0, sizeof(ban)) ;
-    memset(lastVis,0,sizeof(lastVis));
     ui->actionNextStep->setEnabled(true);
     on_actionPause_triggered();
     dropCnt=0;
@@ -428,6 +430,7 @@ void MainWindow::parseFile(){
         return;
     }
     //因为重新打开了文件，记得初始化!!!!
+    memset(lastVis,0,sizeof(lastVis));
     for(int i=0;i<=timeLim;++i)
         instructions[i].clear();
     timeLim=0;
@@ -738,6 +741,12 @@ void MainWindow::washAddPath(QPoint s, QPoint t){
     washFlag[t.x()][t.y()]=true;
 }
 
+bool MainWindow::washCheckNeed(QPoint s){
+    //判断s是否为没有被加入washPath的必要清洗格子
+    int x=s.x(), y=s.y();
+    return lastVis[x][y]>timeNow && !washFlag[x][y] && histDrop[x][y].size()>0 ;
+}
+
 QPoint MainWindow::washBFS(QPoint s, bool *ok){
     //从s点开始BFS，返回最靠近的必要清洗格子或是(col,row)，注意若不能到达(col,row)则返回QPoint(-1,-1)
     //ok为true表示找到了必要清洗格子（这是为了处理(col,row)恰好是必要清洗格子的情况）
@@ -757,7 +766,7 @@ QPoint MainWindow::washBFS(QPoint s, bool *ok){
                 bfsDis[x][y]=bfsDis[a.x()][a.y()]+1;
                 bfsPre[x][y]=a;
                 bfsQue.push_back(QPoint(x,y));
-                if(lastVis[x][y]>timeNow && !washFlag[x][y] && ret==QPoint(-1,-1)){
+                if(washCheckNeed(QPoint(x,y)) && ret==QPoint(-1,-1)){
                     ret = QPoint(x,y);
                     *ok = true;
                 }
@@ -792,11 +801,11 @@ void MainWindow::washNext(){
         ui->actionNextStep->setEnabled(true);
         timerWash->stop();
         isWashing=false;
-        return;
     } else{
         QPoint a=washPath.first();
         histDrop[a.x()][a.y()].clear();
     }
+    update();
 }
 
 void MainWindow::mousePressEvent(QMouseEvent *event){
@@ -814,7 +823,7 @@ void MainWindow::mousePressEvent(QMouseEvent *event){
 
 void MainWindow::on_actionNextStep_triggered()
 {
-    if(ui->actionNextStep->isEnabled()==false) return;
+    if(!playingAll && ui->actionNextStep->isEnabled()==false) return;
     if(timeNow==timeLim){
         on_actionPause_triggered();
         return;
@@ -825,6 +834,14 @@ void MainWindow::on_actionNextStep_triggered()
     memcpy(tmpDrop, nowDrop, sizeof(tmpDrop));
     memcpy(tmpMidState, midState, sizeof(tmpMidState));
     Instruction inst;
+    int failCnt=0;
+    for(int i=1;i<=col;++i){
+        for(int j=1;j<=row;++j){
+            if(histDrop[i][j].size()>1){
+                failCnt++;
+            }
+        }
+    }
     //处理midState（实际上一个更优的做法是直接把合并和分裂都拆成两条来做）
     handleMid(false);
 
@@ -868,24 +885,33 @@ void MainWindow::on_actionNextStep_triggered()
         }
         handleMid(true);
         repaint();
-        ui->actionNextStep->setEnabled(true);
+        on_actionPause_triggered();
         return;
     }
 
     ui->labelCurTime->setNum(++timeNow);
     repaint();
 
+    for(int i=1;i<=col;++i){
+        for(int j=1;j<=row;++j){
+            if(histDrop[i][j].size()>1){
+                failCnt--;
+            }
+        }
+    }
+    if(failCnt<0 && ui->actionWash->isChecked()) QMessageBox::warning(this, "警告", "清洗失败，液滴出现污染", "忽略");
+
     //清洗
     if(ui->actionWash->isChecked()){
         if(wash()){
-            timerWash->start(100);
+            timerWash->start(40);
             isWashing=true;
             histDrop[1][1].clear();
             return;
         }
     }
 
-    ui->actionNextStep->setEnabled(true);
+    if(!playingAll) ui->actionNextStep->setEnabled(true);
 }
 
 void MainWindow::on_actionPreviousStep_triggered()
@@ -913,6 +939,7 @@ void MainWindow::on_actionReset_triggered()
 
 void MainWindow::on_actionPlayAll_triggered()
 {
+    playingAll=true;
     timerPlayAll->start(1000);
     ui->actionNextStep->setEnabled(false);
     ui->actionPreviousStep->setEnabled(false);
@@ -920,9 +947,10 @@ void MainWindow::on_actionPlayAll_triggered()
 
 void MainWindow::on_actionPause_triggered()
 {
+    playingAll=false;
     timerPlayAll->stop();
     ui->actionNextStep->setEnabled(true);
-    ui->actionPreviousStep->setEnabled(true);
+    if(!ui->actionWash->isChecked()) ui->actionPreviousStep->setEnabled(true);
 }
 
 void MainWindow::on_actionWash_triggered()

@@ -103,6 +103,16 @@ void MainWindow::washAddPath(QPoint s, QPoint t){
 }
 ```
 
+另外实现一个简单的函数 bool washCheckNeed(QPoint s) 用于判断 s 是否为还没有被加入washPath的必要清洗格子，实现如下：
+
+```C++
+bool MainWindow::washCheckNeed(QPoint s){
+    //判断s是否为没有被加入washPath的必要清洗格子
+    int x=s.x(), y=s.y();
+    return lastVis[x][y]>timeNow && !washFlag[x][y] && histDrop[x][y].size()>0 ;
+}
+```
+
 然后实现函数 QPoint washBFS(QPoint s, bool \*ok)，表示从 s 点开始BFS，返回最靠近的必要清洗格子或是(col,row)，注意若不能到达(col,row)则返回QPoint(-1,-1)；另外ok为true表示找到了必要清洗格子，这是为了**处理(col,row)恰好是必要清洗格子的情况**。在这个函数中还需要调用washAddPath函数将s和找到的点之间的路径加入washPath。实现如下：
 
 ```C++
@@ -125,7 +135,7 @@ QPoint MainWindow::washBFS(QPoint s, bool *ok){
                 bfsDis[x][y]=bfsDis[a.x()][a.y()]+1;
                 bfsPre[x][y]=a;
                 bfsQue.push_back(QPoint(x,y));
-                if(lastVis[x][y]>timeNow && !washFlag[x][y] && ret==QPoint(-1,-1)){
+                if(washCheckNeed(QPoint(x,y)) && ret==QPoint(-1,-1)){
                     ret = QPoint(x,y);
                     *ok = true;
                 }

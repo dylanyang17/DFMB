@@ -78,6 +78,7 @@ public:
     bool washCheckPoint(QPoint a);
     void washAddPath(QPoint s, QPoint t);
     bool wash();
+    bool washCheckNeed(QPoint s);
 private slots:
 
     void on_actionSetDFMB_triggered();
@@ -130,6 +131,7 @@ private:
     QTimer *timerWash;                     //清洗时的计时器
     QTimer *timerPlayAll;                  //全部播放时的计时器
     QPoint leftUp;                         //左上角坐标
+    bool playingAll;                       //正在播放全部
     void paintEvent(QPaintEvent *);
     void debugPreLoad();
 };
