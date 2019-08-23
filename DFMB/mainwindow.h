@@ -88,6 +88,8 @@ private slots:
 
     void on_actionWash_triggered();
 
+    void on_actionRoute_triggered();
+
 private:
     Ui::MainWindow *ui;
     SetDFMBDialog *setdfmbdialog;

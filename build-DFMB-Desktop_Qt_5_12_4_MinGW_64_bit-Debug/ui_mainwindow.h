@@ -34,10 +34,11 @@ public:
     QAction *actionNextStep;
     QAction *actionPlayAll;
     QAction *actionSound;
-    QAction *actionWash;
     QAction *actionSetDFMB;
     QAction *actionPause;
     QAction *actionAutoSet;
+    QAction *actionWash;
+    QAction *actionRoute;
     QWidget *centralWidget;
     QGridLayout *gridLayout;
     QSpacerItem *verticalSpacer;
@@ -81,9 +82,6 @@ public:
         actionSound = new QAction(MainWindow);
         actionSound->setObjectName(QString::fromUtf8("actionSound"));
         actionSound->setCheckable(true);
-        actionWash = new QAction(MainWindow);
-        actionWash->setObjectName(QString::fromUtf8("actionWash"));
-        actionWash->setCheckable(true);
         actionSetDFMB = new QAction(MainWindow);
         actionSetDFMB->setObjectName(QString::fromUtf8("actionSetDFMB"));
         actionPause = new QAction(MainWindow);
@@ -92,6 +90,12 @@ public:
         actionAutoSet->setObjectName(QString::fromUtf8("actionAutoSet"));
         actionAutoSet->setCheckable(true);
         actionAutoSet->setChecked(true);
+        actionWash = new QAction(MainWindow);
+        actionWash->setObjectName(QString::fromUtf8("actionWash"));
+        actionWash->setCheckable(true);
+        actionRoute = new QAction(MainWindow);
+        actionRoute->setObjectName(QString::fromUtf8("actionRoute"));
+        actionRoute->setCheckable(true);
         centralWidget = new QWidget(MainWindow);
         centralWidget->setObjectName(QString::fromUtf8("centralWidget"));
         gridLayout = new QGridLayout(centralWidget);
@@ -163,7 +167,7 @@ public:
         MainWindow->setCentralWidget(centralWidget);
         menuBar = new QMenuBar(MainWindow);
         menuBar->setObjectName(QString::fromUtf8("menuBar"));
-        menuBar->setGeometry(QRect(0, 0, 747, 23));
+        menuBar->setGeometry(QRect(0, 0, 747, 26));
         menuTEST = new QMenu(menuBar);
         menuTEST->setObjectName(QString::fromUtf8("menuTEST"));
         menu = new QMenu(menuBar);
@@ -189,8 +193,9 @@ public:
         menu->addAction(actionPause);
         menu_2->addAction(actionSound);
         menu_2->addAction(actionWash);
-        menu_2->addAction(actionAutoSet);
+        menu_2->addAction(actionRoute);
         menu_2->addSeparator();
+        menu_2->addAction(actionAutoSet);
         menu_2->addAction(actionSetDFMB);
 
         retranslateUi(MainWindow);
@@ -222,13 +227,14 @@ public:
         actionPlayAll->setShortcut(QApplication::translate("MainWindow", "F5", nullptr));
 #endif // QT_NO_SHORTCUT
         actionSound->setText(QApplication::translate("MainWindow", "\351\237\263\346\225\210", nullptr));
-        actionWash->setText(QApplication::translate("MainWindow", "\346\270\205\346\264\227", nullptr));
         actionSetDFMB->setText(QApplication::translate("MainWindow", "DFMB\350\256\276\347\275\256", nullptr));
         actionPause->setText(QApplication::translate("MainWindow", "\346\232\202\345\201\234\346\222\255\346\224\276", nullptr));
 #ifndef QT_NO_SHORTCUT
         actionPause->setShortcut(QApplication::translate("MainWindow", "F2", nullptr));
 #endif // QT_NO_SHORTCUT
         actionAutoSet->setText(QApplication::translate("MainWindow", "\350\207\252\345\212\250\351\205\215\347\275\256", nullptr));
+        actionWash->setText(QApplication::translate("MainWindow", "\346\270\205\346\264\227", nullptr));
+        actionRoute->setText(QApplication::translate("MainWindow", "\350\207\252\345\212\250\350\247\204\345\210\222", nullptr));
         label->setText(QApplication::translate("MainWindow", "\345\275\223\345\211\215\346\226\207\344\273\266:", nullptr));
         labelFileName->setText(QApplication::translate("MainWindow", "\347\251\272", nullptr));
         label_3->setText(QApplication::translate("MainWindow", "\345\275\223\345\211\215\346\227\266\351\227\264:", nullptr));

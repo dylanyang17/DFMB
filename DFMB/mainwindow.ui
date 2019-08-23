@@ -144,7 +144,7 @@
      <x>0</x>
      <y>0</y>
      <width>747</width>
-     <height>23</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuTEST">
@@ -169,8 +169,9 @@
     </property>
     <addaction name="actionSound"/>
     <addaction name="actionWash"/>
-    <addaction name="actionAutoSet"/>
+    <addaction name="actionRoute"/>
     <addaction name="separator"/>
+    <addaction name="actionAutoSet"/>
     <addaction name="actionSetDFMB"/>
    </widget>
    <addaction name="menuTEST"/>
@@ -234,14 +235,6 @@
     <string>音效</string>
    </property>
   </action>
-  <action name="actionWash">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>清洗</string>
-   </property>
-  </action>
   <action name="actionSetDFMB">
    <property name="text">
     <string>DFMB设置</string>
@@ -264,6 +257,22 @@
    </property>
    <property name="text">
     <string>自动配置</string>
+   </property>
+  </action>
+  <action name="actionWash">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>清洗</string>
+   </property>
+  </action>
+  <action name="actionRoute">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>自动规划</string>
    </property>
   </action>
  </widget>

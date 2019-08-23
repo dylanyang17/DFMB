@@ -203,41 +203,59 @@ void MainWindow::paintEvent(QPaintEvent *event){
         painter.drawRoundRect(tmp.x(),tmp.y(),gridSize,gridSize);
     }
 
-    //液滴
-    for(int i=1;i<=col;++i){
-        for(int j=1;j<=row;++j){
-            if(nowDrop[i][j] && !notAlone[i][j] && !midState[i][j].x()){
-                painter.setBrush(QBrush(dropColor.at(nowDrop[i][j]-1),Qt::SolidPattern));
-                tmp = getPoint(i,j+1) ;
-                painter.drawEllipse(tmp.x(),tmp.y(),gridSize,gridSize) ;
-            } else if(midState[i][j].x()){
-                painter.setBrush(QBrush(dropColor.at(nowDrop[i][j]-1),Qt::SolidPattern));
-                if(midState[i][j].y()==1){
-                    tmp = getPoint(i-1,j+1) ;
-                    painter.drawEllipse(tmp.x()+gridSize/2, tmp.y(), gridSize*2, gridSize);
-                } else{
-                    tmp = getPoint(i,j+2) ;
-                    painter.drawEllipse(tmp.x(), tmp.y()+gridSize/2, gridSize, gridSize*2);
-                }
+    if(timeNow==timeLim && timeNow!=0){
+        //最后的显示污染次数
+        int maxn=0;
+        for(int i=1;i<=col;++i) for(int j=1;j<=row;++j){
+            maxn = std::max(maxn, histDrop[i][j].size()) ;
+        }
+        for(int i=1;i<=col;++i){
+            for(int j=1;j<=row;++j){
+                QFont font;
+                if(maxn<=99) font.setPointSize(20);
+                else font.setPointSize(13);
+                painter.setFont(font);
+                painter.drawText(QRect(getPoint(i,j+1), getPoint(i+1,j)), Qt::AlignCenter, QString::number(histDrop[i][j].size())) ;
             }
-            if(!nowDrop[i][j] && !notAlone[i][j]){
-                QMapIterator<int, int> it(histDrop[i][j]);
-                while(it.hasNext()){
-                    //qDebug() << "TEST:" << i << ' ' << j << ' ' << *it << '\n' ;
-                    if(it.next().value()>0){
-                        painter.setBrush(QBrush(dropColor.at(it.key()-1),Qt::SolidPattern)) ;
-                        tmp = getPoint(i,j+1) ;
-                        QMap<int, QPoint>::iterator tmpIt = tinyPos[i][j].find(it.key());
-                        int x,y;
-                        if(tmpIt==tinyPos[i][j].end()){
-                            x=rd(tmp.x(),tmp.x()+gridSize-tinySize);
-                            y=rd(tmp.y(),tmp.y()+gridSize-tinySize);
-                            tinyPos[i][j][it.key()] = QPoint(x,y) ;
-                        } else {
-                            x=(*tmpIt).x();
-                            y=(*tmpIt).y();
+        }
+
+    } else{
+        //液滴
+        for(int i=1;i<=col;++i){
+            for(int j=1;j<=row;++j){
+                if(nowDrop[i][j] && !notAlone[i][j] && !midState[i][j].x()){
+                    painter.setBrush(QBrush(dropColor.at(nowDrop[i][j]-1),Qt::SolidPattern));
+                    tmp = getPoint(i,j+1) ;
+                    painter.drawEllipse(tmp.x(),tmp.y(),gridSize,gridSize) ;
+                } else if(midState[i][j].x()){
+                    painter.setBrush(QBrush(dropColor.at(nowDrop[i][j]-1),Qt::SolidPattern));
+                    if(midState[i][j].y()==1){
+                        tmp = getPoint(i-1,j+1) ;
+                        painter.drawEllipse(tmp.x()+gridSize/2, tmp.y(), gridSize*2, gridSize);
+                    } else{
+                        tmp = getPoint(i,j+2) ;
+                        painter.drawEllipse(tmp.x(), tmp.y()+gridSize/2, gridSize, gridSize*2);
+                    }
+                }
+                if(!nowDrop[i][j] && !notAlone[i][j]){
+                    QMapIterator<int, int> it(histDrop[i][j]);
+                    while(it.hasNext()){
+                        //qDebug() << "TEST:" << i << ' ' << j << ' ' << *it << '\n' ;
+                        if(it.next().value()>0){
+                            painter.setBrush(QBrush(dropColor.at(it.key()-1),Qt::SolidPattern)) ;
+                            tmp = getPoint(i,j+1) ;
+                            QMap<int, QPoint>::iterator tmpIt = tinyPos[i][j].find(it.key());
+                            int x,y;
+                            if(tmpIt==tinyPos[i][j].end()){
+                                x=rd(tmp.x(),tmp.x()+gridSize-tinySize);
+                                y=rd(tmp.y(),tmp.y()+gridSize-tinySize);
+                                tinyPos[i][j][it.key()] = QPoint(x,y) ;
+                            } else {
+                                x=(*tmpIt).x();
+                                y=(*tmpIt).y();
+                            }
+                            painter.drawEllipse(x, y, tinySize, tinySize);
                         }
-                        painter.drawEllipse(x, y, tinySize, tinySize);
                     }
                 }
             }
@@ -758,5 +776,16 @@ void MainWindow::on_actionPause_triggered()
 
 void MainWindow::on_actionWash_triggered()
 {
+    if(!ui->actionWash->isChecked()){
+        ui->actionRoute->setChecked(false);
+    }
     repaint();
+}
+
+void MainWindow::on_actionRoute_triggered()
+{
+    if(ui->actionRoute->isChecked()){
+        ui->actionWash->setChecked(true);
+        //TODO
+    }
 }
