@@ -7,6 +7,7 @@
 #include <QMap>
 #include <QSound>
 #include <QTimer>
+#include <QQueue>
 #include <QStack>
 #include "setdfmbdialog.h"
 
@@ -33,8 +34,9 @@ public:
     bool debugOn;
     const static int MAXTIME=10000; //时间上界
     const static int MAXN=105;      //长宽上界
-    const static int DIRNUM=8;      //八个方向
-    int dir[DIRNUM][2] = {{1,0},{-1,0},{0,1},{0,-1},{1,1},{-1,-1},{1,-1},{-1,1}} ;
+    const static int BANDIRNUM=8;   //约束的八个方向
+    const static int MOVEDIRNUM=4;  //移动的四个方向
+    int dir[BANDIRNUM][2] = {{1,0},{-1,0},{0,1},{0,-1},{1,1},{-1,-1},{1,-1},{-1,1}} ;
     QPoint getPoint(int a, int b);
     int getCol();
     int getRow();
@@ -70,6 +72,11 @@ public:
     void autoSet();
     void openFileWithPath(QString path);
     int rd(int l, int r);
+    void wash();
+    void mousePressEvent(QMouseEvent *event);
+    QPoint washBFS(QPoint s);
+    bool outGridRange(QPoint a);
+    bool washCheckPoint(QPoint a);
 private slots:
 
     void on_actionSetDFMB_triggered();
@@ -109,6 +116,11 @@ private:
     bool notAlone[MAXN][MAXN];             //标记不单独画出的格子
     QStack<int> disapDropStack;            //消失的液滴栈
     QMap<int, QPoint> tinyPos[MAXN][MAXN]; //某个格子对于各种颜色标记的小圆位置
+    bool ban[MAXN][MAXN];                  //记录是否设置障碍
+    QList<QPoint> washPath;                //记录清洁液滴的路径
+    QQueue<QPoint> que;                    //BFS队列
+    int dis[MAXN][MAXN];                   //BFS中的距离
+    int lastVis[MAXN][MAXN];               //记录每个格子最后被液滴访问的时刻
     QPoint leftUp;
     QTimer *timerPlayAll;
     void paintEvent(QPaintEvent *);

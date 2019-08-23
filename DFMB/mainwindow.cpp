@@ -223,6 +223,12 @@ void MainWindow::paintEvent(QPaintEvent *event){
         //液滴
         for(int i=1;i<=col;++i){
             for(int j=1;j<=row;++j){
+                if(ban[i][j]){ //障碍
+                    painter.setPen(Qt::red);
+                    painter.drawLine(getPoint(i,j+1)+QPoint(1,1), getPoint(i+1,j)-QPoint(1,1));
+                    painter.drawLine(getPoint(i+1,j+1)+QPoint(-1,1), getPoint(i,j)+QPoint(1,-1));
+                    painter.setPen(Qt::black);
+                }
                 if(nowDrop[i][j] && !notAlone[i][j] && !midState[i][j].x()){
                     painter.setBrush(QBrush(dropColor.at(nowDrop[i][j]-1),Qt::SolidPattern));
                     tmp = getPoint(i,j+1) ;
@@ -240,7 +246,6 @@ void MainWindow::paintEvent(QPaintEvent *event){
                 if(!nowDrop[i][j] && !notAlone[i][j]){
                     QMapIterator<int, int> it(histDrop[i][j]);
                     while(it.hasNext()){
-                        //qDebug() << "TEST:" << i << ' ' << j << ' ' << *it << '\n' ;
                         if(it.next().value()>0){
                             painter.setBrush(QBrush(dropColor.at(it.key()-1),Qt::SolidPattern)) ;
                             tmp = getPoint(i,j+1) ;
@@ -298,6 +303,9 @@ void MainWindow::init(){
     //TODO!!!!!!!!!!!!!!!!做整个系统的初始化
     qsrand(time(NULL));
     ui->labelCurTime->setNum(timeNow=0);
+    memset(ban, 0, sizeof(ban)) ;
+    memset(lastVis,0,sizeof(lastVis));
+    ui->actionNextStep->setEnabled(true);
     on_actionPause_triggered();
     dropCnt=0;
     memset(notAlone,0,sizeof(notAlone));
@@ -360,6 +368,7 @@ int  MainWindow::parseLine(QString str){
                 inst.arg[3]=now.y();
                 if(time+i/2>MAXTIME) return -1;
                 instructions[time+i/2-1].append(inst) ;
+                lastVis[now.x()][now.y()]=std::max(lastVis[now.x()][now.y()],time+i/2);
             }
             last=now;
         }
@@ -380,6 +389,22 @@ int  MainWindow::parseLine(QString str){
         }
         if(time>MAXTIME) return -1;
         instructions[time].append(inst) ;
+
+        //处理lastVis
+        if(inst.opt==1){
+            lastVis[inst.arg[2]][inst.arg[3]] = std::max(lastVis[inst.arg[2]][inst.arg[3]], time+1);
+        } else if(inst.opt==2){
+            lastVis[inst.arg[0]][inst.arg[1]] = std::max(lastVis[inst.arg[0]][inst.arg[1]], time+1);
+            lastVis[inst.arg[2]][inst.arg[3]] = std::max(lastVis[inst.arg[2]][inst.arg[3]], time+2);
+            lastVis[inst.arg[4]][inst.arg[5]] = std::max(lastVis[inst.arg[4]][inst.arg[5]], time+2);
+        } else if(inst.opt==3){
+            lastVis[inst.arg[0]][inst.arg[1]] = std::max(lastVis[inst.arg[0]][inst.arg[1]], time+1);
+            lastVis[inst.arg[2]][inst.arg[3]] = std::max(lastVis[inst.arg[2]][inst.arg[3]], time+1);
+            int x=(inst.arg[0]+inst.arg[2])/2, y=(inst.arg[1]+inst.arg[3])/2;
+            lastVis[x][y] = std::max(lastVis[x][y], time+2);
+        } else if(inst.opt==4){
+            lastVis[inst.arg[0]][inst.arg[1]] = std::max(lastVis[inst.arg[0]][inst.arg[1]], time+1);
+        }
     }
     return ret;
 }
@@ -676,12 +701,67 @@ void MainWindow::handleMid(bool rev){
     }
 }
 
+bool MainWindow::outGridRange(QPoint a){
+    //判断a格子是否出界
+    int x=a.x(), y=a.y();
+    return x<1||y<1||x>col||y>row ;
+}
+
+bool MainWindow::washCheckPoint(QPoint a){
+    //清洗模式下判断能否走a格子
+    int x=a.x(), y=a.y();
+    if(outGridRange(a)||ban[x][y]) return false;
+    for(int i=0;i<BANDIRNUM;++i){
+        int tx=x+dir[i][0], ty=y+dir[i][1];
+        if(!outGridRange(QPoint(tx,ty)) && nowDrop[tx][ty]) return false;
+    }
+    return true;
+}
+
+QPoint MainWindow::washBFS(QPoint s){
+    //从s点开始BFS，返回最靠近的必要清洗格子或是(col,row)，注意若不存在必要清洗格子且不能到达(col,row)，则返回QPoint(-1,-1)
+    que.push_back(s);
+    memset(dis,0,sizeof(dis));
+    dis[s.x()][s.y()]=1;
+    while(!que.empty()){
+        QPoint a=que.first();
+        que.pop_front();
+        for(int i=0;i<MOVEDIRNUM;++i){
+            int x=a.x()+dir[i][0], y=a.y()+dir[i][1];
+            if(!washCheckPoint(QPoint(x,y))) continue ;
+            if(!dis[x][y]){
+                dis[x][y]=dis[a.x()][a.y()]+1;
+
+            }
+        }
+    }
+}
+
+void MainWindow::wash(){
+    washPath.clear();
+}
+
+void MainWindow::mousePressEvent(QMouseEvent *event){
+    if(event->button()==Qt::RightButton){
+        int x=event->x(), y=event->y();
+        x = (x-leftUp.x())/gridSize+1;
+        y = (y-leftUp.y())/gridSize+1;
+        y = row-y+1;
+        if(x>=1 && x<=col && y>=1 && y<=row){
+            ban[x][y]^=1;
+        }
+        update();
+    }
+}
+
 void MainWindow::on_actionNextStep_triggered()
 {
+    if(ui->actionNextStep->isEnabled()==false) return;
     if(timeNow==timeLim){
         on_actionPause_triggered();
         return;
     }
+    ui->actionNextStep->setEnabled(false);
     int tmpDrop[MAXN][MAXN];
     QPoint tmpMidState[MAXN][MAXN];
     memcpy(tmpDrop, nowDrop, sizeof(tmpDrop));
@@ -699,7 +779,7 @@ void MainWindow::on_actionNextStep_triggered()
         for(int x1=1;x1<=col;++x1){
             for(int y1=1;y1<=row;++y1){
                 if(nowDrop[x1][y1] && !midState[x1][y1].x()){
-                    for(int d=0;d<DIRNUM;++d){
+                    for(int d=0;d<BANDIRNUM;++d){
                         int x2=x1+dir[d][0], y2=y1+dir[d][1];
                         if(x2<1||y2<1||x2>col||y2>row||midState[x2][y2].x()) continue;
                         if(nowDrop[x2][y2] && nowDrop[x2][y2]!=nowDrop[x1][y1]) {
@@ -730,11 +810,19 @@ void MainWindow::on_actionNextStep_triggered()
         }
         handleMid(true);
         repaint();
+        ui->actionNextStep->setEnabled(true);
         return;
     }
 
     ui->labelCurTime->setNum(++timeNow);
     repaint();
+
+    //清洗
+    if(ui->actionWash->isChecked()){
+        wash();
+    }
+
+    ui->actionNextStep->setEnabled(true);
 }
 
 void MainWindow::on_actionPreviousStep_triggered()
@@ -776,8 +864,12 @@ void MainWindow::on_actionPause_triggered()
 
 void MainWindow::on_actionWash_triggered()
 {
+    init();
     if(!ui->actionWash->isChecked()){
         ui->actionRoute->setChecked(false);
+        ui->actionPreviousStep->setEnabled(true);
+    } else{
+        ui->actionPreviousStep->setEnabled(false);
     }
     repaint();
 }
