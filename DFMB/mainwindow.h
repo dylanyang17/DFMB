@@ -72,11 +72,12 @@ public:
     void autoSet();
     void openFileWithPath(QString path);
     int rd(int l, int r);
-    void wash();
     void mousePressEvent(QMouseEvent *event);
-    QPoint washBFS(QPoint s);
+    QPoint washBFS(QPoint s, bool *ok);
     bool outGridRange(QPoint a);
     bool washCheckPoint(QPoint a);
+    void washAddPath(QPoint s, QPoint t);
+    bool wash();
 private slots:
 
     void on_actionSetDFMB_triggered();
@@ -96,6 +97,8 @@ private slots:
     void on_actionWash_triggered();
 
     void on_actionRoute_triggered();
+
+    void washNext();
 
 private:
     Ui::MainWindow *ui;
@@ -117,12 +120,16 @@ private:
     QStack<int> disapDropStack;            //消失的液滴栈
     QMap<int, QPoint> tinyPos[MAXN][MAXN]; //某个格子对于各种颜色标记的小圆位置
     bool ban[MAXN][MAXN];                  //记录是否设置障碍
-    QList<QPoint> washPath;                //记录清洁液滴的路径
-    QQueue<QPoint> que;                    //BFS队列
-    int dis[MAXN][MAXN];                   //BFS中的距离
+    QQueue<QPoint> washPath;               //记录清洁液滴的路径
+    QQueue<QPoint> bfsQue;                 //BFS队列
+    int bfsDis[MAXN][MAXN];                //BFS中的距离
+    QPoint bfsPre[MAXN][MAXN];             //BFS路径中的前一位置
     int lastVis[MAXN][MAXN];               //记录每个格子最后被液滴访问的时刻
-    QPoint leftUp;
-    QTimer *timerPlayAll;
+    bool washFlag[MAXN][MAXN];             //是否已经被当前的washPath覆盖
+    bool isWashing;                        //记录是否正在清洗
+    QTimer *timerWash;                     //清洗时的计时器
+    QTimer *timerPlayAll;                  //全部播放时的计时器
+    QPoint leftUp;                         //左上角坐标
     void paintEvent(QPaintEvent *);
     void debugPreLoad();
 };

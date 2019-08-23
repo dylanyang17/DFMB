@@ -33,7 +33,9 @@ MainWindow::MainWindow(QWidget *parent) :
     col=row=5;
     debugOn=true;
     timerPlayAll=new QTimer(this);
+    timerWash=new QTimer(this);
     connect(timerPlayAll, SIGNAL(timeout()), this, SLOT(on_actionNextStep_triggered()));
+    connect(timerWash, SIGNAL(timeout()), this, SLOT(washNext()));
     debugPreLoad();
     init();
     repaint();
@@ -265,6 +267,14 @@ void MainWindow::paintEvent(QPaintEvent *event){
                 }
             }
         }
+
+        //清洁液滴
+        if(isWashing){
+            int x=washPath.first().x(), y=washPath.first().y();
+            painter.setBrush(QBrush(QColor(20,20,200),Qt::SolidPattern));
+            tmp = getPoint(x,y+1) ;
+            painter.drawEllipse(tmp.x(),tmp.y(),gridSize,gridSize) ;
+        }
     }
 }
 
@@ -303,6 +313,8 @@ void MainWindow::init(){
     //TODO!!!!!!!!!!!!!!!!做整个系统的初始化
     qsrand(time(NULL));
     ui->labelCurTime->setNum(timeNow=0);
+    timerPlayAll->stop();
+    timerWash->stop();
     memset(ban, 0, sizeof(ban)) ;
     memset(lastVis,0,sizeof(lastVis));
     ui->actionNextStep->setEnabled(true);
@@ -718,27 +730,73 @@ bool MainWindow::washCheckPoint(QPoint a){
     return true;
 }
 
-QPoint MainWindow::washBFS(QPoint s){
-    //从s点开始BFS，返回最靠近的必要清洗格子或是(col,row)，注意若不存在必要清洗格子且不能到达(col,row)，则返回QPoint(-1,-1)
-    que.push_back(s);
-    memset(dis,0,sizeof(dis));
-    dis[s.x()][s.y()]=1;
-    while(!que.empty()){
-        QPoint a=que.first();
-        que.pop_front();
+void MainWindow::washAddPath(QPoint s, QPoint t){
+    //已经以s为起点BFS过了，现在将s到t的路径加入到washPath
+    if(s==t) return ;
+    washAddPath(s, bfsPre[t.x()][t.y()]);
+    washPath.push_back(t);
+    washFlag[t.x()][t.y()]=true;
+}
+
+QPoint MainWindow::washBFS(QPoint s, bool *ok){
+    //从s点开始BFS，返回最靠近的必要清洗格子或是(col,row)，注意若不能到达(col,row)则返回QPoint(-1,-1)
+    //ok为true表示找到了必要清洗格子（这是为了处理(col,row)恰好是必要清洗格子的情况）
+    bfsQue.clear();
+    bfsQue.push_back(s);
+    memset(bfsDis,0,sizeof(bfsDis));
+    bfsDis[s.x()][s.y()]=1;
+    QPoint ret=QPoint(-1,-1);
+    *ok = false;
+    while(!bfsQue.empty()){
+        QPoint a=bfsQue.first();
+        bfsQue.pop_front();
         for(int i=0;i<MOVEDIRNUM;++i){
             int x=a.x()+dir[i][0], y=a.y()+dir[i][1];
             if(!washCheckPoint(QPoint(x,y))) continue ;
-            if(!dis[x][y]){
-                dis[x][y]=dis[a.x()][a.y()]+1;
-
+            if(!bfsDis[x][y]){
+                bfsDis[x][y]=bfsDis[a.x()][a.y()]+1;
+                bfsPre[x][y]=a;
+                bfsQue.push_back(QPoint(x,y));
+                if(lastVis[x][y]>timeNow && !washFlag[x][y] && ret==QPoint(-1,-1)){
+                    ret = QPoint(x,y);
+                    *ok = true;
+                }
             }
         }
     }
+    if(bfsDis[col][row] && ret==QPoint(-1,-1)) ret = QPoint(col,row);
+    if(ret!=QPoint(-1,-1)) washAddPath(s,ret);
+    return ret;
 }
 
-void MainWindow::wash(){
+bool MainWindow::wash(){
+    //用于做单步下的清洗，返回值表示这一步是否进行清洗
     washPath.clear();
+    memset(washFlag,false,sizeof(washFlag));
+    washPath.push_back(QPoint(1,1));
+    if(washCheckPoint(QPoint(1,1))==false) return false;
+    QPoint now=QPoint(1,1);
+    bool ok=true;
+    bool has=false;
+    while(ok){
+        now = washBFS(now, &ok);
+        if(ok) has=true;
+        if(now==QPoint(-1,-1)) return false;
+    }
+    return has;
+}
+
+void MainWindow::washNext(){
+    washPath.pop_front();
+    if(washPath.empty()){
+        ui->actionNextStep->setEnabled(true);
+        timerWash->stop();
+        isWashing=false;
+        return;
+    } else{
+        QPoint a=washPath.first();
+        histDrop[a.x()][a.y()].clear();
+    }
 }
 
 void MainWindow::mousePressEvent(QMouseEvent *event){
@@ -819,7 +877,12 @@ void MainWindow::on_actionNextStep_triggered()
 
     //清洗
     if(ui->actionWash->isChecked()){
-        wash();
+        if(wash()){
+            timerWash->start(100);
+            isWashing=true;
+            histDrop[1][1].clear();
+            return;
+        }
     }
 
     ui->actionNextStep->setEnabled(true);
