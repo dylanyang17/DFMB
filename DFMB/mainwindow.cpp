@@ -1135,18 +1135,18 @@ int MainWindow::calcChebyshevDis(QPoint a, QPoint b){
 }
 
 int MainWindow::routeCalcBlockValue(QPoint p){
-    //计算p点的阻塞值，即到最近端口的切比雪夫距离的相反数乘上routeBlockK，即求一个最小值
-    int ret=INF;
+    //计算p点的阻塞值，即到最近端口的切比雪夫距离的相反数乘上routeBlockK，即求一个最大值
+    int ret=-INF;
     for(int i=0;i<routeInPortList.length();++i){
         QPoint a=routeInPortList.at(i) ;
-        ret = std::min(ret, -calcChebyshevDis(a, p) * routeBlockK) ;
+        ret = std::max(ret, -calcChebyshevDis(a, p) * routeBlockK) ;
     }
     for(int i=0;i<routeOutPortList.length();++i){
         QPoint a=routeOutPortList.at(i) ;
-        ret = std::min(ret, -calcChebyshevDis(a, p) * routeBlockK) ;
+        ret = std::max(ret, -calcChebyshevDis(a, p) * routeBlockK) ;
     }
-    ret = std::min(ret, -calcChebyshevDis(routeWashInPort, p) * routeBlockK) ;
-    ret = std::min(ret, -calcChebyshevDis(routeWashOutPort, p) * routeBlockK) ;
+    ret = std::max(ret, -calcChebyshevDis(routeWashInPort, p) * routeBlockK) ;
+    ret = std::max(ret, -calcChebyshevDis(routeWashOutPort, p) * routeBlockK) ;
     return ret;
 }
 
@@ -1156,9 +1156,10 @@ bool MainWindow::routeGetMergeTarget(int drop1, QPoint p1, int drop2, QPoint p2)
     int minValue = INF ;
     for(int x=2;x<col;++x){      //Merge的中间点显然不在左右边界
         for(int y=2;y<=row;++y){ //不在最下面一排进行Merge，且只进行左右Merge
-            if(routeCheckPos(MAXM+1, QPoint(x,y)) && !histDrop[x][y-1].size()){ //保证下面的点可以走
-                routeBfsBan[x][y-1]=routeBfsBan[x][y]=true;
+            if(!histDrop[x][y].size() && !histDrop[x][y-1].size()){ //保证下面的点可以走
 
+                routeBfsBan[x][y-1]=routeBfsBan[x][y]=true;
+                debug(QString("TTT1, (%1,%2)").arg(x).arg(y)) ;
                 routeBFS(drop1, p1);
                 if(bfsDis[x-1][y]){
                     routeGetPath(p1, QPoint(x-1,y)) ;
@@ -1171,38 +1172,42 @@ bool MainWindow::routeGetMergeTarget(int drop1, QPoint p1, int drop2, QPoint p2)
                     if(bfsDis[x+1][y]){
                         routeGetPath(p2, QPoint(x+1,y)) ;
                         tmpPath2 = routeBfsPath ;
-                    }
-                    int value = tmpPath1.length()+tmpPath2.length()+routeCalcBlockValue(QPoint(x,y)) ;
-                    if(value<minValue){
-                        minValue=value;
-                        routeMergeTarget1 = QPoint(x-1,y) ;
-                        routeMergeTarget2 = QPoint(x+1,y) ;
-                        routeMergePath1 = tmpPath1 ;
-                        routeMergePath2 = tmpPath2 ;
+                        int value = tmpPath1.length()+tmpPath2.length()-2+routeCalcBlockValue(QPoint(x,y)) ;
+                        debug(QString("TTT2, value:%1").arg(value)) ;
+                        if(value<minValue){
+                            minValue=value;
+                            routeMergeTarget1 = QPoint(x-1,y) ;
+                            routeMergeTarget2 = QPoint(x+1,y) ;
+                            routeMergePath1 = tmpPath1 ;
+                            routeMergePath2 = tmpPath2 ;
+                            debug("updated");
+                        }
                     }
                     memset(routeBfsBan,0,sizeof(routeBfsBan));
+                }
 
-                    routeBfsBan[x][y-1]=routeBfsBan[x][y]=true;
-                    routeBFS(drop1, p1);
-                    if(bfsDis[x+1][y]){
-                        routeGetPath(p1, QPoint(x+1,y)) ;
-                        tmpPath1 = routeBfsPath ;
-                        for(int i=0;i<routeBfsPath.length();++i){
-                            QPoint t = routeBfsPath.at(i);
-                            routeBfsBan[t.x()][t.y()]=true;
-                        }
-                        routeBFS(drop2, p2) ;
-                        if(bfsDis[x-1][y]){
-                            routeGetPath(p2, QPoint(x-1,y)) ;
-                            tmpPath2 = routeBfsPath ;
-                        }
-                        int value = tmpPath1.length()+tmpPath2.length()+routeCalcBlockValue(QPoint(x,y)) ;
+                routeBfsBan[x][y-1]=routeBfsBan[x][y]=true;
+                routeBFS(drop1, p1);
+                if(bfsDis[x+1][y]){
+                    routeGetPath(p1, QPoint(x+1,y)) ;
+                    tmpPath1 = routeBfsPath ;
+                    for(int i=0;i<routeBfsPath.length();++i){
+                        QPoint t = routeBfsPath.at(i);
+                        routeBfsBan[t.x()][t.y()]=true;
+                    }
+                    routeBFS(drop2, p2) ;
+                    if(bfsDis[x-1][y]){
+                        routeGetPath(p2, QPoint(x-1,y)) ;
+                        tmpPath2 = routeBfsPath ;
+                        int value = tmpPath1.length()+tmpPath2.length()-2+routeCalcBlockValue(QPoint(x,y)) ;
+                        debug(QString("TTT3, value:%1").arg(value)) ;
                         if(value<minValue){
                             minValue=value;
                             routeMergeTarget1 = QPoint(x+1,y) ;
                             routeMergeTarget2 = QPoint(x-1,y) ;
                             routeMergePath1 = tmpPath1 ;
                             routeMergePath2 = tmpPath2 ;
+                            debug("updated");
                         }
                     }
                     memset(routeBfsBan,0,sizeof(routeBfsBan));
@@ -1303,7 +1308,7 @@ void MainWindow::routeNextStep(){
 void MainWindow::on_actionNextStep_triggered()
 {
     if(!playingAll && ui->actionNextStep->isEnabled()==false) return;
-    if(timeNow==timeLim){
+    if((!ui->actionRoute->isChecked() && timeNow==timeLim) || (ui->actionRoute->isChecked() && routeOperPoint>=routeOperations.length())){
         on_actionPause_triggered();
         return;
     }
