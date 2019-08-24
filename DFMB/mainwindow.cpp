@@ -825,6 +825,13 @@ void MainWindow::mousePressEvent(QMouseEvent *event){
     }
 }
 
+RouteOperation MainWindow::routeGenOutputOperation(int pt){
+    RouteOperation oper;
+    oper.opt=5;
+    oper.drop1=pt;
+    return oper;
+}
+
 void MainWindow::routeInit(){
     //TODO 用于route模式下，预处理每个液滴和端口编号，以及预处理routeOperations
     memset(routeNowDrop,0,sizeof(routeNowDrop));
@@ -842,14 +849,15 @@ void MainWindow::routeInit(){
             RouteInstruction inst = routeInstructions[i].at(j) ;
             RouteOperation oper;
             oper.opt = inst.opt;
+            oper.oriTime = i;
             if(inst.opt==1){
                 //Move
                 std::swap(routeNowDrop[inst.args.at(0)][inst.args.at(1)], routeNowDrop[inst.args.at(2)][inst.args.at(3)]);
             } else if(inst.opt==2){
                 //Split
-                oper.pt1 = routeNowDrop[inst.args.at(0)][inst.args.at(1)];
-                oper.pt2 = routeDropNum+1;
-                oper.pt3 = routeDropNum+2;
+                oper.drop1 = routeNowDrop[inst.args.at(0)][inst.args.at(1)];
+                oper.drop2 = routeDropNum+1;
+                oper.drop3 = routeDropNum+2;
                 routeOperations.append(oper);
 
                 routeNowDrop[inst.args.at(0)][inst.args.at(1)]=0;
@@ -857,9 +865,9 @@ void MainWindow::routeInit(){
                 routeNowDrop[inst.args.at(4)][inst.args.at(5)]=++routeDropNum;
             } else if(inst.opt==3){
                 //Merge
-                oper.pt1 = routeNowDrop[inst.args.at(0)][inst.args.at(1)];
-                oper.pt2 = routeNowDrop[inst.args.at(2)][inst.args.at(3)];
-                oper.pt3 = routeDropNum+1;
+                oper.drop1 = routeNowDrop[inst.args.at(0)][inst.args.at(1)];
+                oper.drop2 = routeNowDrop[inst.args.at(2)][inst.args.at(3)];
+                oper.drop3 = routeDropNum+1;
                 routeOperations.append(oper);
 
                 int x3=(inst.args.at(0)+inst.args.at(2))/2 , y3=(inst.args.at(1)+inst.args.at(3))/2 ;
@@ -874,8 +882,7 @@ void MainWindow::routeInit(){
                 int port = routeInPort.indexOf(QPoint(x,y))+1;
                 routeInPortOfDrop[drop] = port;
 
-                oper.inPortInd = port;
-                oper.pt1 = drop;
+                oper.drop1 = drop;
                 routeOperations.append(oper);
             } else if(inst.opt==5){
                 //Output
@@ -887,9 +894,10 @@ void MainWindow::routeInit(){
                 routeCanOutput[drop] = true;
             } else if(inst.opt==6){
                 //Mix
-                int len=inst.args.length();
-                routeLastMixTime[] = i;
+                int len=inst.args.length(), x=inst.args.at(0), y=inst.args.at(1), drop = routeNowDrop[x][y];
+                routeLastMixTime[drop] = i;
 
+                oper.drop1 = drop;
                 oper.mixLen = len/4;
                 routeOperations.append(oper);
             }
@@ -898,7 +906,19 @@ void MainWindow::routeInit(){
     for(int i=0;i<routeOperations.length();++i){
         RouteOperation oper = routeOperations.at(i);
         if(oper.opt==2){
-            if(routeCanOutput[oper.pt2]) routeOperations.insert(i+1, ) ;
+            int pt = oper.drop2;
+            if(routeCanOutput[pt] && routeLastMixTime[pt]<=oper.oriTime) routeOperations.insert(i+1, routeGenOutputOperation(pt)) ;
+            pt = oper.drop3;
+            if(routeCanOutput[pt] && routeLastMixTime[pt]<=oper.oriTime) routeOperations.insert(i+1, routeGenOutputOperation(pt)) ;
+        } else if(oper.opt==3){
+            int pt = oper.drop3;
+            if(routeCanOutput[pt] && routeLastMixTime[pt]<=oper.oriTime) routeOperations.insert(i+1, routeGenOutputOperation(pt)) ;
+        } else if(oper.opt==4){
+            int pt = oper.drop1;
+            if(routeCanOutput[pt] && routeLastMixTime[pt]<=oper.oriTime) routeOperations.insert(i+1, routeGenOutputOperation(pt)) ;
+        } else if(oper.opt==6){
+            int pt = oper.drop1;
+            if(routeCanOutput[pt] && routeLastMixTime[pt]<=oper.oriTime) routeOperations.insert(i+1, routeGenOutputOperation(pt)) ;
         }
     }
 }

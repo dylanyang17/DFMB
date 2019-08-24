@@ -33,12 +33,13 @@ struct RouteInstruction{
 };
 
 struct RouteOperation{
-    int opt, mixLen, inPortInd, outPortInd, pt1, pt2, pt3;
+    int opt, mixLen, drop1, drop2, drop3, oriTime ;
     //1:Move(无)  2:Split  3:Merge  4:Input  5:Output  6:Mix
+    //oriTime为该操作原本的执行时间
     //若为Input\Output\Mix，则pt1为点编号
-    //若为Merge，则pt1、pt2合并生成pt3；若为Split，则pt1分裂生成pt2、pt3。
-    RouteOperation(int _opt=0, int _mixLen=0, int _inPortInd=0, int _outPortInd=0, int _pt1=0, int _pt2=0, int _pt3=0){
-        opt=_opt; mixLen=_mixLen; inPortInd=_inPortInd; outPortInd=_outPortInd; pt1=_pt1; pt2=_pt2; pt3=_pt3;
+    //若为Merge，则drop1、drop2合并生成drop3；若为Split，则drop1分裂生成drop2、drop3。
+    RouteOperation(int _opt=0, int _mixLen=0, int _drop1=0, int _drop2=0, int _drop3=0, int _oriTime=0){
+        opt=_opt; mixLen=_mixLen; drop1=_drop1; drop2=_drop2; drop3=_drop3; oriTime=_oriTime;
     }
 };
 
@@ -103,6 +104,7 @@ public:
     void routeInit();
     void routeParseFile();
     void routeParseLine(QString str);
+    RouteOperation routeGenOutputOperation(int pt);
 private slots:
 
     void on_actionSetDFMB_triggered();
