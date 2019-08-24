@@ -19,7 +19,16 @@ struct Instruction{
     int opt, arg[6];
 
     Instruction(int _opt=0, int _arg0=0, int _arg1=0, int _arg2=0, int _arg3=0, int _arg4=0, int _arg5=0){
-        opt=_opt, arg[0]=_arg0, arg[1]=_arg1, arg[2]=_arg2, arg[3]=_arg3, arg[4]=_arg4, arg[5]=_arg5;
+        opt=_opt; arg[0]=_arg0; arg[1]=_arg1; arg[2]=_arg2; arg[3]=_arg3; arg[4]=_arg4; arg[5]=_arg5;
+    }
+};
+
+struct RouteInstruction{
+    int opt;
+    QList<int> args;
+
+    RouteInstruction(int _opt=0, QList<int> _args = QList<int>()){
+        opt=_opt; args=_args;
     }
 };
 
@@ -34,6 +43,7 @@ public:
     bool debugOn;
     const static int MAXTIME=10000; //时间上界
     const static int MAXN=105;      //长宽上界
+    const static int MAXM=10000;     //液滴上界
     const static int BANDIRNUM=8;   //约束的八个方向
     const static int MOVEDIRNUM=4;  //移动的四个方向
     int dir[BANDIRNUM][2] = {{1,0},{-1,0},{0,1},{0,-1},{1,1},{-1,-1},{1,-1},{-1,1}} ;
@@ -52,7 +62,7 @@ public:
     QList<QPoint> outPortList;
 
     QPoint getEdgeInd(QPoint p);
-    void parseFile();
+    int parseFile();
     int parseLine(QString str);
     void toIntError(bool ok);
     void init();
@@ -79,6 +89,10 @@ public:
     void washAddPath(QPoint s, QPoint t);
     bool wash();
     bool washCheckNeed(QPoint s);
+    void routeNextStep();
+    void routeInit();
+    void routeParseFile();
+    void routeParseLine(QString str);
 private slots:
 
     void on_actionSetDFMB_triggered();
@@ -132,6 +146,20 @@ private:
     QTimer *timerPlayAll;                  //全部播放时的计时器
     QPoint leftUp;                         //左上角坐标
     bool playingAll;                       //正在播放全部
+
+
+    //For route
+
+    //预处理用
+    int routeNowDrop[MAXN][MAXN];                               //记录每个位置的液滴编号
+    QList<RouteInstruction> routeInstructions[MAXTIME+5];       //存储route模式格式的指令
+
+    //其它变量
+    int routeDropNum;                                           //不同的液滴总数
+    int routeInPortOfDrop[MAXM+5], routeOutPortOfDrop[MAXM+5];  //记录每个液滴的输入/出端口编号，**注意在index的基础上加了1**
+    QList<QPoint> routeInPort, routeOutPort;                    //记录第i个输入/出端口所在位置
+    QPoint routeWashInPort, routeWashOutPort;                   //记录清洗液滴的入口和出口
+
     void paintEvent(QPaintEvent *);
     void debugPreLoad();
 };

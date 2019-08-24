@@ -423,11 +423,11 @@ int  MainWindow::parseLine(QString str){
     return ret;
 }
 
-void MainWindow::parseFile(){
+int MainWindow::parseFile(){
     QFile file(filePath);
     if(!file.open(QIODevice::ReadOnly | QIODevice::Text)){
         QMessageBox::critical(this, "错误", "打开文件失败");
-        return;
+        return -1;
     }
     //因为重新打开了文件，记得初始化!!!!
     memset(lastVis,0,sizeof(lastVis));
@@ -446,11 +446,12 @@ void MainWindow::parseFile(){
         int ret = parseLine(line) ;
         if(ret==-1){
             QMessageBox::critical(this, "错误", QString("第%1行指令出错").arg(cnt));
-            return;
+            return -1;
         }
         if(ret>timeLim) timeLim=ret;
         line = in.readLine();
     }
+    return 0;
 }
 
 MainWindow::~MainWindow()
@@ -519,7 +520,10 @@ void MainWindow::on_actionSetDFMB_triggered()
 
 void MainWindow::openFileWithPath(QString path){
     ui->labelFileName->setText(path.mid(path.lastIndexOf('/')+1,path.length()));
-    parseFile();
+    if(parseFile()!=-1) {
+        routeParseFile();
+        routeInit();
+    }
     if(ui->actionAutoSet->isChecked()){
         autoSet();
     }
@@ -809,7 +813,7 @@ void MainWindow::washNext(){
 }
 
 void MainWindow::mousePressEvent(QMouseEvent *event){
-    if(event->button()==Qt::RightButton){
+    if(event->button()==Qt::RightButton && !ui->actionRoute->isChecked()){
         int x=event->x(), y=event->y();
         x = (x-leftUp.x())/gridSize+1;
         y = (y-leftUp.y())/gridSize+1;
@@ -821,6 +825,129 @@ void MainWindow::mousePressEvent(QMouseEvent *event){
     }
 }
 
+void MainWindow::routeInit(){
+    //TODO
+    memset(routeNowDrop,0,sizeof(routeNowDrop));
+    memset(routeInPortOfDrop,0,sizeof(routeInPortOfDrop));
+    memset(routeOutPortOfDrop,0,sizeof(routeOutPortOfDrop));
+    routeDropNum=0;
+    routeInPort.clear();
+    routeOutPort.clear();
+    routeWashInPort  = QPoint(1,row/2)   ;
+    routeWashOutPort = QPoint(col,row/2) ;
+    for(int i=0;i<=timeLim;++i){
+        for(int j=0;j<routeInstructions[i].length();++j){
+            RouteInstruction inst = routeInstructions[i].at(j) ;
+            if(inst.opt==1){
+                //Move
+                std::swap(routeNowDrop[inst.args.at(0)][inst.args.at(1)], routeNowDrop[inst.args.at(2)][inst.args.at(3)]);
+            } else if(inst.opt==2){
+                //Split
+                routeNowDrop[inst.args.at(0)][inst.args.at(1)]=0;
+                routeNowDrop[inst.args.at(2)][inst.args.at(3)]=++routeDropNum;
+                routeNowDrop[inst.args.at(4)][inst.args.at(5)]=++routeDropNum;
+            } else if(inst.opt==3){
+                //Merge
+                int x3=(inst.args.at(0)+inst.args.at(2))/2 , y3=(inst.args.at(1)+inst.args.at(3))/2 ;
+                routeNowDrop[inst.args.at(0)][inst.args.at(1)]=0;
+                routeNowDrop[inst.args.at(2)][inst.args.at(3)]=0;
+                routeNowDrop[x3][y3]=++routeDropNum;
+            } else if(inst.opt==4){
+                //Input
+                int x=inst.args.at(0), y=inst.args.at(1), drop=++routeDropNum;
+                routeNowDrop[x][y] = drop;
+                if(routeInPort.indexOf(QPoint(x,y))==-1) routeInPort.append(QPoint(x,y));
+                int port = routeInPort.indexOf(QPoint(x,y))+1;
+                routeInPortOfDrop[drop] = port;
+            } else if(inst.opt==5){
+                //Output
+                int x=inst.args.at(0), y=inst.args.at(1), drop=routeNowDrop[x][y];
+                routeNowDrop[x][y] = 0 ;
+                if(routeOutPort.indexOf(QPoint(x,y))==-1) routeOutPort.append(QPoint(x,y));
+                int port = routeInPort.indexOf(QPoint(x,y))+1;
+                routeOutPortOfDrop[drop] = port;
+            } else if(inst.opt==6){
+                //Mix
+
+            }
+        }
+    }
+}
+
+void MainWindow::routeParseLine(QString str){
+    //route模式下对str这一行指令进行解析，保证能够解析成功（因为已经调用过parseFile()）
+    RouteInstruction inst;
+    QStringList argList = str.split(',') ;
+    int time=-1, len=argList.length();
+    bool ok;
+    QString tmp = argList.at(0);
+    time = tmp.right(tmp.length()-tmp.lastIndexOf(' ')).toInt(&ok) ;
+
+    if(str.left(str.indexOf(' '))=="Move"){
+        inst.opt=1;
+    } else if(str.left(str.indexOf(' '))=="Split"){
+        inst.opt=2;
+    } else if(str.left(str.indexOf(' '))=="Merge"){
+        inst.opt=3;
+    } else if(str.left(str.indexOf(' '))=="Input"){
+        inst.opt=4;
+    } else if(str.left(str.indexOf(' '))=="Output"){
+        inst.opt=5;
+    } else if(str.left(str.indexOf(' '))=="Mix"){
+        inst.opt=6;
+        QPoint last;
+        RouteInstruction tmpInst;
+        tmpInst.opt=1;
+        for(int i=1;i<len;i+=2){
+            //Mix要拆成Move（便于预处理移动），但也要整体放入（便于预处理Mix）
+            QPoint now;
+            QString s = argList.at(i).simplified();
+            if(s.endsWith(';')) s = s.left(s.length()-1);
+            now.setX(s.toInt(&ok));
+            s = argList.at(i+1).simplified();
+            if(s.endsWith(';')) s = s.left(s.length()-1);
+            now.setY(s.toInt(&ok));
+            if(i!=1){
+                tmpInst.args.append(last.x());
+                tmpInst.args.append(last.y());
+                tmpInst.args.append(now.x());
+                tmpInst.args.append(now.x());
+                routeInstructions[time+i/2-1].append(tmpInst) ;
+            }
+            last=now;
+        }
+    }
+    for(int i=1;i<len;++i){
+        QString s = argList.at(i);
+        s = s.simplified();
+        if(s.endsWith(';')) s = s.left(s.length()-1);
+        inst.args.append(s.toInt(&ok));
+    }
+    routeInstructions[time].append(inst) ;
+}
+
+void MainWindow::routeParseFile(){
+    QFile file(filePath);
+
+    //因为重新打开了文件，记得初始化!!!!
+    for(int i=0;i<=MAXTIME;++i)
+        routeInstructions[i].clear();
+    QTextStream in(&file);
+    QString line = in.readLine(); ;
+    while(!line.isNull()){
+        if(line==""){
+            line = in.readLine();
+            continue;
+        }
+        routeParseLine(line) ;
+        line = in.readLine();
+    }
+}
+
+void MainWindow::routeNextStep(){
+
+}
+
 void MainWindow::on_actionNextStep_triggered()
 {
     if(!playingAll && ui->actionNextStep->isEnabled()==false) return;
@@ -828,6 +955,12 @@ void MainWindow::on_actionNextStep_triggered()
         on_actionPause_triggered();
         return;
     }
+
+    if(ui->actionRoute->isChecked()){
+        routeNextStep();
+        return ;
+    }
+
     ui->actionNextStep->setEnabled(false);
     int tmpDrop[MAXN][MAXN];
     QPoint tmpMidState[MAXN][MAXN];
