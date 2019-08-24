@@ -44,14 +44,11 @@ MainWindow::MainWindow(QWidget *parent) :
 void MainWindow::debugPreLoad()
 {
     if(debugOn){
-        int T=0;
+        int T=1;
         if(T==0){
             filePath=tr("E:/作业及课件/大二小学期/作业/贵系程设/Week1/Week1/Input/testcase0.txt");
         }
         else if(T==1){
-            col=4;row=6;
-            inPortStr="4,6;1,6";
-            outPortStr="4,5";
             filePath=tr("E:/作业及课件/大二小学期/作业/贵系程设/Week1/Week1/Input/testcase1.txt");
         }
 //        parsePortStr(inPortStr, col, row);
@@ -228,7 +225,7 @@ void MainWindow::paintEvent(QPaintEvent *event){
         painter.drawRoundRect(tmp.x(),tmp.y(),gridSize,gridSize);
     }
 
-    if(timeNow==timeLim && timeNow!=0){
+    if((!ui->actionRoute->isChecked() && timeNow==timeLim && timeNow!=0) || (ui->actionRoute->isChecked() && routeOperPoint>=routeOperations.length())){
         //最后的显示污染次数
         int maxn=0;
         for(int i=1;i<=col;++i) for(int j=1;j<=row;++j){
@@ -873,6 +870,7 @@ void MainWindow::routeInit(){
     memset(routeOutPortOfDrop,0,sizeof(routeOutPortOfDrop));
     memset(routeCanOutput,0,sizeof(routeCanOutput));
     memset(routeLastMixTime,0,sizeof(routeLastMixTime));
+    routeOperations.clear();
     routeDropNum=0;
     routeInPortList.clear();
     routeOutPortList.clear();
@@ -1117,7 +1115,7 @@ QPoint MainWindow::routeGetNextPos(QPoint s, QPoint t, bool flag=false){
         if(flag) {routeBfsPath.append(s); routeBfsPath.append(t);}
         return t;
     }
-    QPoint ret = routeGetNextPos(s, bfsPre[t.x()][t.y()]) ;
+    QPoint ret = routeGetNextPos(s, bfsPre[t.x()][t.y()], true) ;
     if(flag) routeBfsPath.append(t) ;
     return ret;
 }
@@ -1159,7 +1157,7 @@ bool MainWindow::routeGetMergeTarget(int drop1, QPoint p1, int drop2, QPoint p2)
     for(int x=2;x<col;++x){      //Merge的中间点显然不在左右边界
         for(int y=2;y<=row;++y){ //不在最下面一排进行Merge，且只进行左右Merge
             if(routeCheckPos(MAXM+1, QPoint(x,y)) && !histDrop[x][y-1].size()){ //保证下面的点可以走
-                routeBfsBan[x][y-1]=true;
+                routeBfsBan[x][y-1]=routeBfsBan[x][y]=true;
 
                 routeBFS(drop1, p1);
                 if(bfsDis[x-1][y]){
@@ -1184,7 +1182,7 @@ bool MainWindow::routeGetMergeTarget(int drop1, QPoint p1, int drop2, QPoint p2)
                     }
                     memset(routeBfsBan,0,sizeof(routeBfsBan));
 
-                    routeBfsBan[x][y-1]=true;
+                    routeBfsBan[x][y-1]=routeBfsBan[x][y]=true;
                     routeBFS(drop1, p1);
                     if(bfsDis[x+1][y]){
                         routeGetPath(p1, QPoint(x+1,y)) ;
@@ -1240,13 +1238,27 @@ void MainWindow::routeNextStep(){
         //Merge TODOTODOTODO
         int drop1=oper.drop1, drop2=oper.drop2, drop3=oper.drop3;
         if(routeMergeTarget1!=QPoint(-1,-1) || routeGetMergeTarget(drop1, routeGetDropPos(drop1), drop2, routeGetDropPos(drop2))){
+            QPoint p1=routeMergeTarget1, p2=routeMergeTarget2, p3=(p1+p2)/2 ;
             //有Target
+            debug(QString("Merge. Target1:(%1,%2)  Target2:(%3,%4)  Len1:%5  Len2:%6").arg(p1.x()).arg(p1.y()).arg(p2.x()).arg(p2.y())
+                  .arg(routeMergePath1.length()).arg(routeMergePath2.length()));
             if(routeMergeMid){
-
+                debug("test3");
+                routeMergeMid=false;
+                nowDrop[p1.x()][p1.y()]=nowDrop[p2.x()][p2.y()]=0;
+                midState[p3.x()][p3.y()] = QPoint(0, 0) ;
+                notAlone[p1.x()][p1.y()]=notAlone[p2.x()][p2.y()]=false ;
+                memset(routeWashBan,0,sizeof(routeWashBan));
+                routeOperPoint++;
             } else if(routeMergePath1.length()==1 && routeMergePath2.length()==1){
-
+                debug("test4");
+                routeMergeMid=true;
+                routePlaceDrop(drop3, p3);
+                midState[p3.x()][p3.y()] = QPoint(2, 1) ;
+                notAlone[p1.x()][p1.y()]=notAlone[p2.x()][p2.y()]=true ;
             }
             else{
+                debug("test5");
                 if(routeMergePath1.length()>1 && routeCheckPos(drop1, routeMergePath1.at(1))){
                     routeMoveDrop(drop1,routeMergePath1.at(0),routeMergePath1.at(1)) ;
                     routeMergePath1.pop_front();
