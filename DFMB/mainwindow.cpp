@@ -254,7 +254,12 @@ void MainWindow::paintEvent(QPaintEvent *event){
                     painter.drawLine(getPoint(i+1,j+1)+QPoint(-1,1), getPoint(i,j)+QPoint(1,-1));
                     painter.setPen(Qt::black);
                 }
-                if(nowDrop[i][j] && !notAlone[i][j] && !midState[i][j].x()){
+                if(ui->actionRoute->isChecked() && nowDrop[i][j]<0){
+                    QColor color=QColor(58,159,177) ;
+                    painter.setBrush(QBrush(color,Qt::SolidPattern));
+                    tmp = getPoint(i,j+1) ;
+                    painter.drawEllipse(tmp.x(),tmp.y(),gridSize,gridSize) ;
+                } else if(nowDrop[i][j]>0 && !notAlone[i][j] && !midState[i][j].x()){
                     painter.setBrush(QBrush(dropColor.at(nowDrop[i][j]-1),Qt::SolidPattern));
                     tmp = getPoint(i,j+1) ;
                     painter.drawEllipse(tmp.x(),tmp.y(),gridSize,gridSize) ;
@@ -292,7 +297,7 @@ void MainWindow::paintEvent(QPaintEvent *event){
         }
 
         //清洁液滴
-        if(isWashing){
+        if(isWashing && !ui->actionRoute->isChecked()){
             int x=washPath.first().x(), y=washPath.first().y();
             QColor color=QColor(58,159,177) ;
             painter.setBrush(QBrush(color,Qt::SolidPattern));
@@ -331,9 +336,14 @@ void MainWindow::init(){
     //TODO!!!!!!!!!!!!!!!!做整个系统的初始化
     qsrand(time(NULL));
     ui->labelCurTime->setNum(timeNow=0);
+    routeMergeMid=false;
+    routeMergePath1.clear();
+    routeMergePath2.clear();
+    routeMergeTarget1=routeMergeTarget2=QPoint(-1,-1);
+    memset(routeBfsBan,0,sizeof(routeBfsBan));
     memset(routeLastDrop,0,sizeof(routeLastDrop));
     memset(routeDropPos,0,sizeof(routeDropPos));
-    memset(routeBan,0,sizeof(routeBan));
+    memset(routeWashBan,0,sizeof(routeWashBan));
     routeOperPoint=0;
     isWashing=false;
     playingAll=false;
@@ -1085,8 +1095,8 @@ void MainWindow::routeBFS(int drop, QPoint s){
         bfsQue.pop_front();
         for(int i=0;i<MOVEDIRNUM;++i){
             int x=a.x()+dir[i][0], y=a.y()+dir[i][1];
-            if(outGridRange(QPoint(x,y)) || !routeCheckPos(drop, QPoint(x,y))) continue;
-            if(drop<0 && routeBan[x][y]) continue; //禁止清洗液滴进入
+            if(outGridRange(QPoint(x,y)) || !routeCheckPos(drop, QPoint(x,y)) || routeBfsBan[x][y]) continue;
+            if(drop<0 && routeWashBan[x][y]) continue; //禁止清洗液滴进入
             if(!bfsDis[x][y]){
                 bfsDis[x][y]=bfsDis[a.x()][a.y()]+1;
                 bfsPre[x][y]=a;
@@ -1122,6 +1132,98 @@ void MainWindow::debugOper(RouteOperation oper){
     debug(QString("opt:%1, drop1:%2, drop2:%3, drop3:%4, oriTime:%5, mixLen:%6").arg(oper.opt).arg(oper.drop1).arg(oper.drop2).arg(oper.drop3).arg(oper.oriTime).arg(oper.mixLen)) ;
 }
 
+int MainWindow::calcChebyshevDis(QPoint a, QPoint b){
+    return std::abs(a.x()-b.x()) + std::abs(a.y()-b.y()) ;
+}
+
+int MainWindow::routeCalcBlockValue(QPoint p){
+    //计算p点的阻塞值，即到最近端口的切比雪夫距离的相反数乘上routeBlockK，即求一个最小值
+    int ret=INF;
+    for(int i=0;i<routeInPortList.length();++i){
+        QPoint a=routeInPortList.at(i) ;
+        ret = std::min(ret, -calcChebyshevDis(a, p) * routeBlockK) ;
+    }
+    for(int i=0;i<routeOutPortList.length();++i){
+        QPoint a=routeOutPortList.at(i) ;
+        ret = std::min(ret, -calcChebyshevDis(a, p) * routeBlockK) ;
+    }
+    ret = std::min(ret, -calcChebyshevDis(routeWashInPort, p) * routeBlockK) ;
+    ret = std::min(ret, -calcChebyshevDis(routeWashOutPort, p) * routeBlockK) ;
+    return ret;
+}
+
+bool MainWindow::routeGetMergeTarget(int drop1, QPoint p1, int drop2, QPoint p2){
+    routeMergeTarget1=routeMergeTarget2=QPoint(-1,-1);
+    QList<QPoint> tmpPath1, tmpPath2;
+    int minValue = INF ;
+    for(int x=2;x<col;++x){      //Merge的中间点显然不在左右边界
+        for(int y=2;y<=row;++y){ //不在最下面一排进行Merge，且只进行左右Merge
+            if(routeCheckPos(MAXM+1, QPoint(x,y)) && !histDrop[x][y-1].size()){ //保证下面的点可以走
+                routeBfsBan[x][y-1]=true;
+
+                routeBFS(drop1, p1);
+                if(bfsDis[x-1][y]){
+                    routeGetPath(p1, QPoint(x-1,y)) ;
+                    tmpPath1 = routeBfsPath ;
+                    for(int i=0;i<routeBfsPath.length();++i){
+                        QPoint t = routeBfsPath.at(i);
+                        routeBfsBan[t.x()][t.y()]=true;
+                    }
+                    routeBFS(drop2, p2) ;
+                    if(bfsDis[x+1][y]){
+                        routeGetPath(p2, QPoint(x+1,y)) ;
+                        tmpPath2 = routeBfsPath ;
+                    }
+                    int value = tmpPath1.length()+tmpPath2.length()+routeCalcBlockValue(QPoint(x,y)) ;
+                    if(value<minValue){
+                        minValue=value;
+                        routeMergeTarget1 = QPoint(x-1,y) ;
+                        routeMergeTarget2 = QPoint(x+1,y) ;
+                        routeMergePath1 = tmpPath1 ;
+                        routeMergePath2 = tmpPath2 ;
+                    }
+                    memset(routeBfsBan,0,sizeof(routeBfsBan));
+
+                    routeBfsBan[x][y-1]=true;
+                    routeBFS(drop1, p1);
+                    if(bfsDis[x+1][y]){
+                        routeGetPath(p1, QPoint(x+1,y)) ;
+                        tmpPath1 = routeBfsPath ;
+                        for(int i=0;i<routeBfsPath.length();++i){
+                            QPoint t = routeBfsPath.at(i);
+                            routeBfsBan[t.x()][t.y()]=true;
+                        }
+                        routeBFS(drop2, p2) ;
+                        if(bfsDis[x-1][y]){
+                            routeGetPath(p2, QPoint(x-1,y)) ;
+                            tmpPath2 = routeBfsPath ;
+                        }
+                        int value = tmpPath1.length()+tmpPath2.length()+routeCalcBlockValue(QPoint(x,y)) ;
+                        if(value<minValue){
+                            minValue=value;
+                            routeMergeTarget1 = QPoint(x+1,y) ;
+                            routeMergeTarget2 = QPoint(x-1,y) ;
+                            routeMergePath1 = tmpPath1 ;
+                            routeMergePath2 = tmpPath2 ;
+                        }
+                    }
+                    memset(routeBfsBan,0,sizeof(routeBfsBan));
+                }
+            }
+        }
+    }
+    if(routeMergeTarget1!=QPoint(-1,-1)){
+        //TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!记得重置routeWashBan
+        for(int i=0;i<BANDIRNUM;++i){
+            int x=routeMergeTarget1.x()+dir[i][0], y=routeMergeTarget1.y()+dir[i][1];
+            if(!outGridRange(QPoint(x,y))) routeWashBan[x][y]=true;
+            x=routeMergeTarget2.x()+dir[i][0]; y=routeMergeTarget2.y()+dir[i][1];
+            if(!outGridRange(QPoint(x,y))) routeWashBan[x][y]=true;
+        }
+        return true;
+    } else return false;
+}
+
 void MainWindow::routeNextStep(){
     if(routeOperPoint >= routeOperations.length()) return ;
 
@@ -1135,7 +1237,26 @@ void MainWindow::routeNextStep(){
     if(oper.opt==2){
         //Split
     } else if(oper.opt==3){
-        //Merge
+        //Merge TODOTODOTODO
+        int drop1=oper.drop1, drop2=oper.drop2, drop3=oper.drop3;
+        if(routeMergeTarget1!=QPoint(-1,-1) || routeGetMergeTarget(drop1, routeGetDropPos(drop1), drop2, routeGetDropPos(drop2))){
+            //有Target
+            if(routeMergeMid){
+
+            } else if(routeMergePath1.length()==1 && routeMergePath2.length()==1){
+
+            }
+            else{
+                if(routeMergePath1.length()>1 && routeCheckPos(drop1, routeMergePath1.at(1))){
+                    routeMoveDrop(drop1,routeMergePath1.at(0),routeMergePath1.at(1)) ;
+                    routeMergePath1.pop_front();
+                }
+                if(routeMergePath2.length()>1 && routeCheckPos(drop2, routeMergePath2.at(1))){
+                    routeMoveDrop(drop2,routeMergePath2.at(0),routeMergePath2.at(1)) ;
+                    routeMergePath2.pop_front();
+                }
+            }
+        }
     } else if(oper.opt==4){
         //Input
         int drop=oper.drop1;
@@ -1147,9 +1268,7 @@ void MainWindow::routeNextStep(){
     } else if(oper.opt==5){
         //Output
         int drop=oper.drop1;
-        debug(QString("test3")) ;
         QPoint p=routeGetDropPos(drop), outPort=routeOutPortList.at(routeOutPortOfDrop[drop]-1);
-        debug("test4");
         if(p == outPort){
             routeSetDropPos(drop, QPoint(0,0));
             nowDrop[p.x()][p.y()]=0;
@@ -1161,7 +1280,6 @@ void MainWindow::routeNextStep(){
                 routeMoveDrop(drop, p, nxt);
             }
         }
-        debug("test5");
     } else if(oper.opt==6){
         //Mix
     }

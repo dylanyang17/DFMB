@@ -57,6 +57,7 @@ public:
     const static int MAXM=10000;     //液滴上界
     const static int BANDIRNUM=8;   //约束的八个方向
     const static int MOVEDIRNUM=4;  //移动的四个方向
+    const static int INF=(1<<30)-1;
     int dir[BANDIRNUM][2] = {{1,0},{-1,0},{0,1},{0,-1},{1,1},{-1,-1},{1,-1},{-1,1}} ;
     QPoint getPoint(int a, int b);
     int getCol();
@@ -115,6 +116,9 @@ public:
     void routeGetPath(QPoint s, QPoint t);
     void newDropColor(int type , QColor a , QColor b);
     void debugOper(RouteOperation oper);
+    bool routeGetMergeTarget(int drop1, QPoint p1, int drop2, QPoint p2);
+    int routeCalcBlockValue(QPoint p);
+    int calcChebyshevDis(QPoint a, QPoint b);
 private slots:
 
     void on_actionSetDFMB_triggered();
@@ -186,9 +190,14 @@ private:
     int routeLastMixTime[MAXM+5];                               //记录液滴最后开始进行Mix操作的时间（用于判断能否Output）
     int routeOperPoint;                                         //当前执行的操作索引值
     QPoint routeDropPos[2*MAXM+5];                              //记录每个液滴现在的位置，注意取值时索引加上MAXM以处理负值
-    bool routeBan[MAXN][MAXN];                                  //禁止清洗液滴进入
+    bool routeWashBan[MAXN][MAXN];                                  //禁止清洗液滴进入
     int routeLastDrop[MAXN][MAXN];                              //上一时刻的液滴（用于计算约束）
     QList<QPoint> routeBfsPath;                                 //利用Bfs得到的路径
+    bool routeBfsBan[MAXN][MAXN];                               //Bfs中临时禁止走到的位置
+    QPoint routeMergeTarget1, routeMergeTarget2;                //Merge操作的两个目标点
+    QList<QPoint> routeMergePath1, routeMergePath2;             //Merge操作的两条路径
+    bool routeMergeMid;
+    static const int routeBlockK=3;                              //计算阻塞值乘上的权值
 
     void paintEvent(QPaintEvent *);
     void debugPreLoad();
