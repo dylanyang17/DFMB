@@ -198,7 +198,7 @@ Split(opt==2):  x1,y1,x2,y2,x3,y3 (由1分成2、3)
 Merge(opt==3):  x1,y1,x2,y2       (将1、2合并到中间位置)
 Input(opt==4):  x1,y1             (输入到1位置)
 Output(opt==5): x1,y1             (由1位置输出)
-
+Mix(opt==6):    x1,y1,x2,y2,x3,y3,x4,...
 ```
 
 #### RouteOperation

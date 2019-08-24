@@ -203,7 +203,7 @@ Mix(opt==6):    x1,y1,x2,y2,x3,y3,x4,...
 
 #### RouteOperation
 
-存储操作。
+存储操作，opt同上（无Move和Output）
 
 ### 操作的实现
 

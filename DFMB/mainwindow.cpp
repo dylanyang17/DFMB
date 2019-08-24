@@ -826,10 +826,12 @@ void MainWindow::mousePressEvent(QMouseEvent *event){
 }
 
 void MainWindow::routeInit(){
-    //TODO
+    //TODO 用于route模式下，预处理每个液滴和端口编号，以及预处理routeOperations
     memset(routeNowDrop,0,sizeof(routeNowDrop));
     memset(routeInPortOfDrop,0,sizeof(routeInPortOfDrop));
     memset(routeOutPortOfDrop,0,sizeof(routeOutPortOfDrop));
+    memset(routeCanOutput,0,sizeof(routeCanOutput));
+    memset(routeLastMixTime,0,sizeof(routeLastMixTime));
     routeDropNum=0;
     routeInPort.clear();
     routeOutPort.clear();
@@ -838,16 +840,28 @@ void MainWindow::routeInit(){
     for(int i=0;i<=timeLim;++i){
         for(int j=0;j<routeInstructions[i].length();++j){
             RouteInstruction inst = routeInstructions[i].at(j) ;
+            RouteOperation oper;
+            oper.opt = inst.opt;
             if(inst.opt==1){
                 //Move
                 std::swap(routeNowDrop[inst.args.at(0)][inst.args.at(1)], routeNowDrop[inst.args.at(2)][inst.args.at(3)]);
             } else if(inst.opt==2){
                 //Split
+                oper.pt1 = routeNowDrop[inst.args.at(0)][inst.args.at(1)];
+                oper.pt2 = routeDropNum+1;
+                oper.pt3 = routeDropNum+2;
+                routeOperations.append(oper);
+
                 routeNowDrop[inst.args.at(0)][inst.args.at(1)]=0;
                 routeNowDrop[inst.args.at(2)][inst.args.at(3)]=++routeDropNum;
                 routeNowDrop[inst.args.at(4)][inst.args.at(5)]=++routeDropNum;
             } else if(inst.opt==3){
                 //Merge
+                oper.pt1 = routeNowDrop[inst.args.at(0)][inst.args.at(1)];
+                oper.pt2 = routeNowDrop[inst.args.at(2)][inst.args.at(3)];
+                oper.pt3 = routeDropNum+1;
+                routeOperations.append(oper);
+
                 int x3=(inst.args.at(0)+inst.args.at(2))/2 , y3=(inst.args.at(1)+inst.args.at(3))/2 ;
                 routeNowDrop[inst.args.at(0)][inst.args.at(1)]=0;
                 routeNowDrop[inst.args.at(2)][inst.args.at(3)]=0;
@@ -859,6 +873,10 @@ void MainWindow::routeInit(){
                 if(routeInPort.indexOf(QPoint(x,y))==-1) routeInPort.append(QPoint(x,y));
                 int port = routeInPort.indexOf(QPoint(x,y))+1;
                 routeInPortOfDrop[drop] = port;
+
+                oper.inPortInd = port;
+                oper.pt1 = drop;
+                routeOperations.append(oper);
             } else if(inst.opt==5){
                 //Output
                 int x=inst.args.at(0), y=inst.args.at(1), drop=routeNowDrop[x][y];
@@ -866,10 +884,21 @@ void MainWindow::routeInit(){
                 if(routeOutPort.indexOf(QPoint(x,y))==-1) routeOutPort.append(QPoint(x,y));
                 int port = routeInPort.indexOf(QPoint(x,y))+1;
                 routeOutPortOfDrop[drop] = port;
+                routeCanOutput[drop] = true;
             } else if(inst.opt==6){
                 //Mix
+                int len=inst.args.length();
+                routeLastMixTime[] = i;
 
+                oper.mixLen = len/4;
+                routeOperations.append(oper);
             }
+        }
+    }
+    for(int i=0;i<routeOperations.length();++i){
+        RouteOperation oper = routeOperations.at(i);
+        if(oper.opt==2){
+            if(routeCanOutput[oper.pt2]) routeOperations.insert(i+1, ) ;
         }
     }
 }
@@ -895,11 +924,23 @@ void MainWindow::routeParseLine(QString str){
         inst.opt=5;
     } else if(str.left(str.indexOf(' '))=="Mix"){
         inst.opt=6;
+    }
+    //放入这条指令到routeInstructions
+    for(int i=1;i<len;++i){
+        QString s = argList.at(i);
+        s = s.simplified();
+        if(s.endsWith(';')) s = s.left(s.length()-1);
+        inst.args.append(s.toInt(&ok));
+    }
+    routeInstructions[time].append(inst) ;
+
+    //放入拆分Mix的Move指令
+    if(inst.opt==6){
         QPoint last;
         RouteInstruction tmpInst;
         tmpInst.opt=1;
         for(int i=1;i<len;i+=2){
-            //Mix要拆成Move（便于预处理移动），但也要整体放入（便于预处理Mix）
+            //Mix要拆成Move（便于预处理移动），但也要整体放入（便于预处理Mix），为了保证顺序，先放入整体的Mix
             QPoint now;
             QString s = argList.at(i).simplified();
             if(s.endsWith(';')) s = s.left(s.length()-1);
@@ -917,13 +958,6 @@ void MainWindow::routeParseLine(QString str){
             last=now;
         }
     }
-    for(int i=1;i<len;++i){
-        QString s = argList.at(i);
-        s = s.simplified();
-        if(s.endsWith(';')) s = s.left(s.length()-1);
-        inst.args.append(s.toInt(&ok));
-    }
-    routeInstructions[time].append(inst) ;
 }
 
 void MainWindow::routeParseFile(){

@@ -32,6 +32,16 @@ struct RouteInstruction{
     }
 };
 
+struct RouteOperation{
+    int opt, mixLen, inPortInd, outPortInd, pt1, pt2, pt3;
+    //1:Move(无)  2:Split  3:Merge  4:Input  5:Output  6:Mix
+    //若为Input\Output\Mix，则pt1为点编号
+    //若为Merge，则pt1、pt2合并生成pt3；若为Split，则pt1分裂生成pt2、pt3。
+    RouteOperation(int _opt=0, int _mixLen=0, int _inPortInd=0, int _outPortInd=0, int _pt1=0, int _pt2=0, int _pt3=0){
+        opt=_opt; mixLen=_mixLen; inPortInd=_inPortInd; outPortInd=_outPortInd; pt1=_pt1; pt2=_pt2; pt3=_pt3;
+    }
+};
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -155,10 +165,13 @@ private:
     QList<RouteInstruction> routeInstructions[MAXTIME+5];       //存储route模式格式的指令
 
     //其它变量
+    bool routeCanOutput[MAXM+5];                                //记录每个液滴是否可以output
     int routeDropNum;                                           //不同的液滴总数
     int routeInPortOfDrop[MAXM+5], routeOutPortOfDrop[MAXM+5];  //记录每个液滴的输入/出端口编号，**注意在index的基础上加了1**
     QList<QPoint> routeInPort, routeOutPort;                    //记录第i个输入/出端口所在位置
     QPoint routeWashInPort, routeWashOutPort;                   //记录清洗液滴的入口和出口
+    QList<RouteOperation> routeOperations;                      //记录所有的操作
+    int routeLastMixTime[MAXM+5];                               //记录液滴最后开始进行Mix操作的时间（用于判断能否Output）
 
     void paintEvent(QPaintEvent *);
     void debugPreLoad();
