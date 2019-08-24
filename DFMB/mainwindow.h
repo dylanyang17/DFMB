@@ -77,7 +77,6 @@ public:
     int parseLine(QString str);
     void toIntError(bool ok);
     void init();
-    int newDrop(int type, QColor a, QColor b);
     int getMidState(int x1, int y1, int x2, int y2);
     void handleMid(bool rev);
     void instMove(int x1, int y1, int x2, int y2, bool rev);
@@ -105,6 +104,17 @@ public:
     void routeParseFile();
     void routeParseLine(QString str);
     RouteOperation routeGenOutputOperation(int pt);
+    bool routeCheckPos(int drop, QPoint p);
+    void routePlaceDrop(int drop, QPoint p);
+    QPoint routeGetDropPos(int drop);
+    void routeSetDropPos(int drop, QPoint p);
+    void routeMoveDrop(int drop, QPoint p1, QPoint p2);
+    void routeBFS(int drop, QPoint p);
+    QPoint routeGetNextPos(QPoint s, QPoint t, bool flag);
+    bool routeCheckConstraint(int drop, QPoint p);
+    void routeGetPath(QPoint s, QPoint t);
+    void newDropColor(int type , QColor a , QColor b);
+    void debugOper(RouteOperation oper);
 private slots:
 
     void on_actionSetDFMB_triggered();
@@ -170,10 +180,15 @@ private:
     bool routeCanOutput[MAXM+5];                                //记录每个液滴是否可以output
     int routeDropNum;                                           //不同的液滴总数
     int routeInPortOfDrop[MAXM+5], routeOutPortOfDrop[MAXM+5];  //记录每个液滴的输入/出端口编号，**注意在index的基础上加了1**
-    QList<QPoint> routeInPort, routeOutPort;                    //记录第i个输入/出端口所在位置
+    QList<QPoint> routeInPortList, routeOutPortList;                    //记录第i个输入/出端口所在位置
     QPoint routeWashInPort, routeWashOutPort;                   //记录清洗液滴的入口和出口
     QList<RouteOperation> routeOperations;                      //记录所有的操作
     int routeLastMixTime[MAXM+5];                               //记录液滴最后开始进行Mix操作的时间（用于判断能否Output）
+    int routeOperPoint;                                         //当前执行的操作索引值
+    QPoint routeDropPos[2*MAXM+5];                              //记录每个液滴现在的位置，注意取值时索引加上MAXM以处理负值
+    bool routeBan[MAXN][MAXN];                                  //禁止清洗液滴进入
+    int routeLastDrop[MAXN][MAXN];                              //上一时刻的液滴（用于计算约束）
+    QList<QPoint> routeBfsPath;                                 //利用Bfs得到的路径
 
     void paintEvent(QPaintEvent *);
     void debugPreLoad();

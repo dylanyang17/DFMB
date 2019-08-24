@@ -38,25 +38,27 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(timerWash, SIGNAL(timeout()), this, SLOT(washNext()));
     debugPreLoad();
     init();
-    repaint();
+    update();
 }
 
 void MainWindow::debugPreLoad()
 {
     if(debugOn){
-        int T=1;
-        if(T==1){
+        int T=0;
+        if(T==0){
+            filePath=tr("E:/作业及课件/大二小学期/作业/贵系程设/Week1/Week1/Input/testcase0.txt");
+        }
+        else if(T==1){
             col=4;row=6;
             inPortStr="4,6;1,6";
             outPortStr="4,5";
             filePath=tr("E:/作业及课件/大二小学期/作业/贵系程设/Week1/Week1/Input/testcase1.txt");
         }
-        parsePortStr(inPortStr, col, row);
-        inPortList=tmpList;
-        parsePortStr(outPortStr, col, row);
-        outPortList=tmpList;
-        ui->labelFileName->setText(filePath.mid(filePath.lastIndexOf('/')+1,filePath.length()));
-        parseFile();
+//        parsePortStr(inPortStr, col, row);
+//        inPortList=tmpList;
+//        parsePortStr(outPortStr, col, row);
+//        outPortList=tmpList;
+        openFileWithPath(filePath) ;
     }
 }
 
@@ -179,28 +181,49 @@ void MainWindow::paintEvent(QPaintEvent *event){
 
     //输入和输出端口
     painter.setBrush(QBrush(Qt::red,Qt::SolidPattern));
-    for(int i=0;i<inPortList.length();++i){
-        tmp = inPortList.at(i);
-        tmp = getEdgeInd(tmp);
-        tmp = getPoint(tmp.x(),tmp.y()+1) ;
-        painter.drawRoundRect(tmp.x(),tmp.y(),gridSize,gridSize);
+    if(!ui->actionRoute->isChecked()){
+        for(int i=0;i<inPortList.length();++i){
+            tmp = inPortList.at(i);
+            tmp = getEdgeInd(tmp);
+            tmp = getPoint(tmp.x(),tmp.y()+1) ;
+            painter.drawRoundRect(tmp.x(),tmp.y(),gridSize,gridSize);
+        }
+    } else{
+        for(int i=0;i<routeInPortList.length();++i){
+            tmp = routeInPortList.at(i);
+            tmp = getEdgeInd(tmp);
+            tmp = getPoint(tmp.x(),tmp.y()+1) ;
+            painter.drawRoundRect(tmp.x(),tmp.y(),gridSize,gridSize);
+        }
     }
     painter.setBrush(QBrush(Qt::blue,Qt::SolidPattern));
-    for(int i=0;i<outPortList.length();++i){
-        tmp = outPortList.at(i);
-        tmp = getEdgeInd(tmp);
-        tmp = getPoint(tmp.x(),tmp.y()+1) ;
-        painter.drawRoundRect(tmp.x(),tmp.y(),gridSize,gridSize);
+    if(!ui->actionRoute->isChecked()){
+        for(int i=0;i<outPortList.length();++i){
+            tmp = outPortList.at(i);
+            tmp = getEdgeInd(tmp);
+            tmp = getPoint(tmp.x(),tmp.y()+1) ;
+            painter.drawRoundRect(tmp.x(),tmp.y(),gridSize,gridSize);
+        }
+    } else{
+        for(int i=0;i<routeOutPortList.length();++i){
+            tmp = routeOutPortList.at(i);
+            tmp = getEdgeInd(tmp);
+            tmp = getPoint(tmp.x(),tmp.y()+1) ;
+            painter.drawRoundRect(tmp.x(),tmp.y(),gridSize,gridSize);
+        }
     }
 
     //清洗液滴的端口
     if(ui->actionWash->isChecked()){
         painter.setBrush(QBrush(QColor(100,50,80),Qt::SolidPattern));
-        tmp = QPoint(0,1);
+        if(!ui->actionRoute->isChecked()) tmp = QPoint(0,1);
+        else tmp = getEdgeInd(routeWashInPort) ;
         tmp = getPoint(tmp.x(),tmp.y()+1);
         painter.drawRoundRect(tmp.x(),tmp.y(),gridSize,gridSize);
+
         painter.setBrush(QBrush(QColor(50,80,120),Qt::SolidPattern));
-        tmp = QPoint(col+1,row);
+        if(!ui->actionRoute->isChecked()) tmp = QPoint(col+1,row);
+        else tmp = getEdgeInd(routeWashOutPort) ;
         tmp = getPoint(tmp.x(),tmp.y()+1);
         painter.drawRoundRect(tmp.x(),tmp.y(),gridSize,gridSize);
     }
@@ -283,37 +306,35 @@ int MainWindow::rd(int l,int r){
     return qrand()%(r-l+1)+l;
 }
 
-int MainWindow::newDrop(int type=0, QColor a=QColor(0,0,0), QColor b=QColor(0,0,0)){
-    //返回++dropCnt，注意可能产生新颜色
+void MainWindow::newDropColor(int type=0, QColor a=QColor(0,0,0), QColor b=QColor(0,0,0)){
     //type==0时为随机产生新颜色，type==1时为分裂a产生两种颜色，type==2时为合并a、b产生一种颜色
-    ++dropCnt;
-    if(dropColor.length()<dropCnt){
-        if(type==1){
-            int tmpRGB[3], newRGB1[3], newRGB2[3];
-            tmpRGB[0]=a.red(), tmpRGB[1]=a.green(), tmpRGB[2]=a.blue();
-            for(int i=0;i<3;++i){
-                int tmp=tmpRGB[i];
-                int rang=rd(0,std::min(tmp-20,230-tmp));
-                newRGB1[i]=tmpRGB[i]-rang;
-                newRGB2[i]=tmpRGB[i]+rang;
-                if(rd(0,1)) std::swap(newRGB1[i],newRGB2[i]);
-            }
-            dropColor.append(QColor(newRGB1[0],newRGB1[1],newRGB1[2]));
-            dropColor.append(QColor(newRGB2[0],newRGB2[1],newRGB2[2]));
-            debugDrop(dropCnt++);
-        } else if(type==2){
-            dropColor.append(QColor((a.red()+b.red())/2,(a.green()+b.green())/2,(a.blue()+b.blue())/2));
+    //产生的新颜色放在dropColor最后
+    if(type==1){
+        int tmpRGB[3], newRGB1[3], newRGB2[3];
+        tmpRGB[0]=a.red(); tmpRGB[1]=a.green(); tmpRGB[2]=a.blue();
+        for(int i=0;i<3;++i){
+            int tmp=tmpRGB[i];
+            int rang=rd(0,std::min(tmp-20,230-tmp));
+            newRGB1[i]=tmpRGB[i]-rang;
+            newRGB2[i]=tmpRGB[i]+rang;
+            if(rd(0,1)) std::swap(newRGB1[i],newRGB2[i]);
         }
-        else    dropColor.append(QColor(qrand()%200+25,qrand()%200+25,qrand()%200+25));
-    } else if(type==1) ++dropCnt;
-    debugDrop(dropCnt);
-    return dropCnt;
+        dropColor.append(QColor(newRGB1[0],newRGB1[1],newRGB1[2]));
+        dropColor.append(QColor(newRGB2[0],newRGB2[1],newRGB2[2]));
+    } else if(type==2){
+        dropColor.append(QColor((a.red()+b.red())/2,(a.green()+b.green())/2,(a.blue()+b.blue())/2));
+    }
+    else    dropColor.append(QColor(qrand()%200+25,qrand()%200+25,qrand()%200+25));
 }
 
 void MainWindow::init(){
     //TODO!!!!!!!!!!!!!!!!做整个系统的初始化
     qsrand(time(NULL));
     ui->labelCurTime->setNum(timeNow=0);
+    memset(routeLastDrop,0,sizeof(routeLastDrop));
+    memset(routeDropPos,0,sizeof(routeDropPos));
+    memset(routeBan,0,sizeof(routeBan));
+    routeOperPoint=0;
     isWashing=false;
     playingAll=false;
     timerPlayAll->stop();
@@ -332,8 +353,7 @@ void MainWindow::init(){
             tinyPos[i][j].clear();
         }
     }
-    dropColor.clear();
-    repaint();
+    update();
 }
 
 int  MainWindow::parseLine(QString str){
@@ -451,6 +471,7 @@ int MainWindow::parseFile(){
         if(ret>timeLim) timeLim=ret;
         line = in.readLine();
     }
+    file.close();
     return 0;
 }
 
@@ -520,12 +541,13 @@ void MainWindow::on_actionSetDFMB_triggered()
 
 void MainWindow::openFileWithPath(QString path){
     ui->labelFileName->setText(path.mid(path.lastIndexOf('/')+1,path.length()));
-    if(parseFile()!=-1) {
-        routeParseFile();
-        routeInit();
-    }
+    int ret=parseFile();
     if(ui->actionAutoSet->isChecked()){
         autoSet();
+    }
+    if(ret!=-1){
+        routeParseFile();
+        routeInit();
     }
     init();
 }
@@ -564,8 +586,8 @@ void MainWindow::instSplit1(int x1, int y1,int x2, int y2, int x3, int y3, bool 
     //从x1,y1分裂到x2,y2和x3,y3，rev为true时表明撤销分裂的首步
     if(ui->actionSound->isChecked()) soundSplit1->play();
     if(!rev){
-        nowDrop[x2][y2] = newDrop(1, dropColor.at(nowDrop[x1][y1]-1))-1;
-        nowDrop[x3][y3] = dropCnt;
+        nowDrop[x2][y2] = ++dropCnt ;
+        nowDrop[x3][y3] = ++dropCnt ;
         histDrop[x2][y2][nowDrop[x2][y2]] = histDrop[x2][y2][nowDrop[x2][y2]]+1;
         histDrop[x3][y3][nowDrop[x3][y3]] = histDrop[x3][y3][nowDrop[x3][y3]]+1;
         notAlone[x2][y2] = notAlone[x3][y3] = true;
@@ -583,7 +605,7 @@ void MainWindow::instSplit1(int x1, int y1,int x2, int y2, int x3, int y3, bool 
 void MainWindow::instMerge1(int x1, int y1, int x2, int y2, int x3, int y3, bool rev){
     //从x1,y1和x2,y2合并到x3,y3，rev为true是表示撤销合并的首步
     if(!rev){
-        nowDrop[x3][y3] = newDrop(2, dropColor.at(nowDrop[x1][y1]-1), dropColor.at(nowDrop[x2][y2]-1));
+        nowDrop[x3][y3] = ++dropCnt ;
         histDrop[x3][y3][nowDrop[x3][y3]] = histDrop[x3][y3][nowDrop[x3][y3]]+1;
         notAlone[x1][y1] = notAlone[x2][y2] = true;
         midState[x3][y3] = QPoint(2,getMidState(x2,y2,x3,y3));
@@ -636,7 +658,7 @@ int MainWindow::instInput(int x1, int y1, bool rev){
     if(inPortList.indexOf(QPoint(x1,y1))==-1)
         return -1;
     if(!rev){
-        nowDrop[x1][y1] = newDrop();
+        nowDrop[x1][y1] = ++dropCnt;
         histDrop[x1][y1][nowDrop[x1][y1]] = histDrop[x1][y1][nowDrop[x1][y1]]+1;
     } else {
         histDrop[x1][y1][nowDrop[x1][y1]] = histDrop[x1][y1][nowDrop[x1][y1]]-1;
@@ -834,14 +856,16 @@ RouteOperation MainWindow::routeGenOutputOperation(int pt){
 
 void MainWindow::routeInit(){
     //TODO 用于route模式下，预处理每个液滴和端口编号，以及预处理routeOperations
+    //另外还要处理dropColor
+    dropColor.clear();
     memset(routeNowDrop,0,sizeof(routeNowDrop));
     memset(routeInPortOfDrop,0,sizeof(routeInPortOfDrop));
     memset(routeOutPortOfDrop,0,sizeof(routeOutPortOfDrop));
     memset(routeCanOutput,0,sizeof(routeCanOutput));
     memset(routeLastMixTime,0,sizeof(routeLastMixTime));
     routeDropNum=0;
-    routeInPort.clear();
-    routeOutPort.clear();
+    routeInPortList.clear();
+    routeOutPortList.clear();
     routeWashInPort  = QPoint(1,row/2)   ;
     routeWashOutPort = QPoint(col,row/2) ;
     for(int i=0;i<=timeLim;++i){
@@ -859,6 +883,7 @@ void MainWindow::routeInit(){
                 oper.drop2 = routeDropNum+1;
                 oper.drop3 = routeDropNum+2;
                 routeOperations.append(oper);
+                newDropColor(1, dropColor.at(oper.drop1-1)) ;
 
                 routeNowDrop[inst.args.at(0)][inst.args.at(1)]=0;
                 routeNowDrop[inst.args.at(2)][inst.args.at(3)]=++routeDropNum;
@@ -869,6 +894,7 @@ void MainWindow::routeInit(){
                 oper.drop2 = routeNowDrop[inst.args.at(2)][inst.args.at(3)];
                 oper.drop3 = routeDropNum+1;
                 routeOperations.append(oper);
+                newDropColor(2, dropColor.at(oper.drop1-1), dropColor.at(oper.drop2-1));
 
                 int x3=(inst.args.at(0)+inst.args.at(2))/2 , y3=(inst.args.at(1)+inst.args.at(3))/2 ;
                 routeNowDrop[inst.args.at(0)][inst.args.at(1)]=0;
@@ -878,9 +904,10 @@ void MainWindow::routeInit(){
                 //Input
                 int x=inst.args.at(0), y=inst.args.at(1), drop=++routeDropNum;
                 routeNowDrop[x][y] = drop;
-                if(routeInPort.indexOf(QPoint(x,y))==-1) routeInPort.append(QPoint(x,y));
-                int port = routeInPort.indexOf(QPoint(x,y))+1;
+                if(routeInPortList.indexOf(QPoint(x,y))==-1) routeInPortList.append(QPoint(x,y));
+                int port = routeInPortList.indexOf(QPoint(x,y))+1;
                 routeInPortOfDrop[drop] = port;
+                newDropColor();
 
                 oper.drop1 = drop;
                 routeOperations.append(oper);
@@ -888,8 +915,8 @@ void MainWindow::routeInit(){
                 //Output
                 int x=inst.args.at(0), y=inst.args.at(1), drop=routeNowDrop[x][y];
                 routeNowDrop[x][y] = 0 ;
-                if(routeOutPort.indexOf(QPoint(x,y))==-1) routeOutPort.append(QPoint(x,y));
-                int port = routeInPort.indexOf(QPoint(x,y))+1;
+                if(routeOutPortList.indexOf(QPoint(x,y))==-1) routeOutPortList.append(QPoint(x,y));
+                int port = routeOutPortList.indexOf(QPoint(x,y))+1;
                 routeOutPortOfDrop[drop] = port;
                 routeCanOutput[drop] = true;
             } else if(inst.opt==6){
@@ -920,6 +947,11 @@ void MainWindow::routeInit(){
             int pt = oper.drop1;
             if(routeCanOutput[pt] && routeLastMixTime[pt]<=oper.oriTime) routeOperations.insert(i+1, routeGenOutputOperation(pt)) ;
         }
+    }
+    routeOutPortList.replace(0,QPoint(col/2,1));
+    int tmp = col/routeInPortList.length();
+    for(int i=0;i<routeInPortList.length();++i){
+        routeInPortList.replace(i, QPoint(i*tmp+1, row));
     }
 }
 
@@ -982,6 +1014,10 @@ void MainWindow::routeParseLine(QString str){
 
 void MainWindow::routeParseFile(){
     QFile file(filePath);
+    if(!file.open(QIODevice::ReadOnly | QIODevice::Text)){
+        QMessageBox::critical(this, "错误", "打开文件失败");
+        return ;
+    }
 
     //因为重新打开了文件，记得初始化!!!!
     for(int i=0;i<=MAXTIME;++i)
@@ -996,10 +1032,142 @@ void MainWindow::routeParseFile(){
         routeParseLine(line) ;
         line = in.readLine();
     }
+    file.close();
+}
+
+bool MainWindow::routeCheckConstraint(int drop, QPoint p){
+    //检查静态\动态约束
+    for(int i=0;i<BANDIRNUM;++i){
+        int x=p.x()+dir[i][0], y=p.y()+dir[i][1];
+        if(!outGridRange(QPoint(x,y)) && ((nowDrop[x][y]&&nowDrop[x][y]!=drop) || (routeLastDrop[x][y]&&routeLastDrop[x][y]!=drop))) return false;
+    }
+    return true;
+}
+
+bool MainWindow::routeCheckPos(int drop, QPoint p){
+    //返回drop能否走p点
+    int x=p.x(), y=p.y();
+    return routeCheckConstraint(drop, p) && (histDrop[x][y].size()==0 || histDrop[x][y].find(drop)!=histDrop[x][y].end());
+}
+
+QPoint MainWindow::routeGetDropPos(int drop){
+    return routeDropPos[drop+MAXM];
+}
+
+void MainWindow::routeSetDropPos(int drop, QPoint p){
+    routeDropPos[drop+MAXM]=p;
+}
+
+void MainWindow::routePlaceDrop(int drop, QPoint p){
+    //将液滴放在p点，注意若drop<0则为清洗液滴
+    int x=p.x(), y=p.y();
+    nowDrop[x][y]=drop;
+    routeSetDropPos(drop, p);
+    if(drop<0){
+        histDrop[x][y].clear();
+    } else histDrop[x][y][drop] = histDrop[x][y][drop] + 1;
+}
+
+void MainWindow::routeMoveDrop(int drop, QPoint p1, QPoint p2){
+    //从p1移动到p2
+    routePlaceDrop(drop, p2);
+    nowDrop[p1.x()][p1.y()]=0;
+}
+
+void MainWindow::routeBFS(int drop, QPoint s){
+    //从drop所在位置s开始BFS
+    bfsQue.clear();
+    bfsQue.push_back(s);
+    memset(bfsDis,0,sizeof(bfsDis));
+    bfsDis[s.x()][s.y()]=1;
+    while(!bfsQue.empty()){
+        QPoint a=bfsQue.first();
+        bfsQue.pop_front();
+        for(int i=0;i<MOVEDIRNUM;++i){
+            int x=a.x()+dir[i][0], y=a.y()+dir[i][1];
+            if(outGridRange(QPoint(x,y)) || !routeCheckPos(drop, QPoint(x,y))) continue;
+            if(drop<0 && routeBan[x][y]) continue; //禁止清洗液滴进入
+            if(!bfsDis[x][y]){
+                bfsDis[x][y]=bfsDis[a.x()][a.y()]+1;
+                bfsPre[x][y]=a;
+                bfsQue.push_back(QPoint(x,y));
+            }
+        }
+    }
+}
+
+QPoint MainWindow::routeGetNextPos(QPoint s, QPoint t, bool flag=false){
+    //已经从s调用BFS过，想求得走到t的路径上下一个点，flag为true时记录路径
+    if(s==t){
+        // t就等于s，特殊情况
+        if(flag) routeBfsPath.append(s);
+        return s;
+    }
+    else if(bfsPre[t.x()][t.y()]==s) {
+        if(flag) {routeBfsPath.append(s); routeBfsPath.append(t);}
+        return t;
+    }
+    QPoint ret = routeGetNextPos(s, bfsPre[t.x()][t.y()]) ;
+    if(flag) routeBfsPath.append(t) ;
+    return ret;
+}
+
+void MainWindow::routeGetPath(QPoint s, QPoint t){
+    //已经从s调用BFS过，想得到s到t的路径，存储在routeBfsPath中
+    routeBfsPath.clear();
+    routeGetNextPos(s, t, true);
+}
+
+void MainWindow::debugOper(RouteOperation oper){
+    debug(QString("opt:%1, drop1:%2, drop2:%3, drop3:%4, oriTime:%5, mixLen:%6").arg(oper.opt).arg(oper.drop1).arg(oper.drop2).arg(oper.drop3).arg(oper.oriTime).arg(oper.mixLen)) ;
 }
 
 void MainWindow::routeNextStep(){
+    if(routeOperPoint >= routeOperations.length()) return ;
 
+    ui->actionNextStep->setEnabled(false);
+    memcpy(routeLastDrop, nowDrop, sizeof(nowDrop)) ;
+    debug("test1");
+    RouteOperation oper = routeOperations.at(routeOperPoint);
+    debugOper(oper);
+    debug("test2");
+
+    if(oper.opt==2){
+        //Split
+    } else if(oper.opt==3){
+        //Merge
+    } else if(oper.opt==4){
+        //Input
+        int drop=oper.drop1;
+        QPoint p=routeInPortList.at(routeInPortOfDrop[drop]-1);
+        if(routeCheckPos(drop, p)){
+            routePlaceDrop(drop, p);
+            routeOperPoint++;
+        }
+    } else if(oper.opt==5){
+        //Output
+        int drop=oper.drop1;
+        debug(QString("test3")) ;
+        QPoint p=routeGetDropPos(drop), outPort=routeOutPortList.at(routeOutPortOfDrop[drop]-1);
+        debug("test4");
+        if(p == outPort){
+            routeSetDropPos(drop, QPoint(0,0));
+            nowDrop[p.x()][p.y()]=0;
+            routeOperPoint++;
+        } else{
+            routeBFS(drop, p);
+            if(bfsDis[outPort.x()][outPort.y()]){
+                QPoint nxt = routeGetNextPos(p, outPort);
+                routeMoveDrop(drop, p, nxt);
+            }
+        }
+        debug("test5");
+    } else if(oper.opt==6){
+        //Mix
+    }
+    ui->labelCurTime->setNum(++timeNow);
+    if(!playingAll) ui->actionNextStep->setEnabled(true);
+    update();
 }
 
 void MainWindow::on_actionNextStep_triggered()
@@ -1071,13 +1239,13 @@ void MainWindow::on_actionNextStep_triggered()
             handleInst(instructions[timeNow].at(now), true);
         }
         handleMid(true);
-        repaint();
+        update();
         on_actionPause_triggered();
         return;
     }
 
     ui->labelCurTime->setNum(++timeNow);
-    repaint();
+    update();
 
     for(int i=1;i<=col;++i){
         for(int j=1;j<=row;++j){
@@ -1116,7 +1284,7 @@ void MainWindow::on_actionPreviousStep_triggered()
 
     //处理midState
     handleMid(true);
-    repaint();
+    update();
 }
 
 void MainWindow::on_actionReset_triggered()
@@ -1149,13 +1317,17 @@ void MainWindow::on_actionWash_triggered()
     } else{
         ui->actionPreviousStep->setEnabled(false);
     }
-    repaint();
+    update();
 }
 
 void MainWindow::on_actionRoute_triggered()
 {
     if(ui->actionRoute->isChecked()){
         ui->actionWash->setChecked(true);
+        ui->actionPreviousStep->setEnabled(false);
         //TODO
+    } else{
+        ui->actionPreviousStep->setEnabled(true);
     }
+    init();
 }
