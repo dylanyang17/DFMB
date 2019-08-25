@@ -107,12 +107,12 @@ public:
     void routeParseFile();
     void routeParseLine(QString str);
     RouteOperation routeGenOutputOperation(int pt);
-    bool routeCheckPos(int drop, QPoint p);
+    bool routeCheckPos(int drop, QPoint p, bool washUsedUp);
     void routePlaceDrop(int drop, QPoint p);
     QPoint routeGetDropPos(int drop);
     void routeSetDropPos(int drop, QPoint p);
     void routeMoveDrop(int drop, QPoint p1, QPoint p2);
-    void routeBFS(int drop, QPoint p);
+    void routeBFS(int drop, QPoint p, bool washUsedUp);
     QPoint routeGetNextPos(QPoint s, QPoint t, bool flag);
     bool routeCheckConstraint(int drop, QPoint p);
     void routeGetPath(QPoint s, QPoint t);
@@ -122,6 +122,7 @@ public:
     int routeCalcBlockValue(QPoint p);
     int calcChebyshevDis(QPoint a, QPoint b);
     bool routeGetMixTarget(int drop, QPoint p, int mixLen);
+    void routeHandleWashDrop();
 private slots:
 
     void on_actionSetDFMB_triggered();
@@ -192,7 +193,7 @@ private:
     int routeLastMixTime[MAXM+5];                               //记录液滴最后开始进行Mix操作的时间（用于判断能否Output）
     int routeOperPoint;                                         //当前执行的操作索引值
     QPoint routeDropPos[2*MAXM+5];                              //记录每个液滴现在的位置，注意取值时索引加上MAXM以处理负值
-    bool routeWashBan[MAXN][MAXN];                                  //禁止清洗液滴进入
+    bool routeWashBan[MAXN][MAXN];                              //禁止清洗液滴进入
     int routeLastDrop[MAXN][MAXN];                              //上一时刻的液滴（用于计算约束）
     QList<QPoint> routeBfsPath;                                 //利用Bfs得到的路径
     bool routeBfsBan[MAXN][MAXN];                               //Bfs中临时禁止走到的位置
@@ -204,6 +205,10 @@ private:
     QList<QPoint> routeMixPath;                                 //Mix操作的路径
     bool routeIsMixing;                                         //是否已经找到Mix路径
     static const int routeBlockK=3;                             //计算阻塞值乘上的权值
+    int routeWashDropCnt;                                       //清洁液滴的总计数器，注意每次是--，即为负数
+    QList<int> routeWashDrops;                                  //当前存活的清洁液滴，值为液滴编号(注意为负数)
+    int routeWashDropCap[MAXM+5];                               //记录清洁液滴剩余清洗容量，记得每次生成新清洁液滴时初始化
+    int bfsWashDis[MAXN][MAXN];                                 //BFS过程得到的某格子能否清洗到的标记并记录距离（路径上不经过其它污染）
 
     void paintEvent(QPaintEvent *);
     void debugPreLoad();

@@ -249,7 +249,15 @@ void MainWindow::paintEvent(QPaintEvent *event){
                     painter.setPen(Qt::black);
                 }
                 if(ui->actionRoute->isChecked() && nowDrop[i][j]<0){
-                    QColor color=QColor(58,159,177) ;
+                    QColor color;
+                    if(routeWashDropCap[nowDrop[i][j]]==3)
+                        color=QColor(58,159,177) ;
+                    else if(routeWashDropCap[nowDrop[i][j]]==2)
+                        color=QColor(47,138,154) ;
+                    else if(routeWashDropCap[nowDrop[i][j]]==1)
+                        color=QColor(28,110,125) ;
+                    else if(routeWashDropCap[nowDrop[i][j]]==0)
+                        color=QColor(54,100,108) ;
                     painter.setBrush(QBrush(color,Qt::SolidPattern));
                     tmp = getPoint(i,j+1) ;
                     painter.drawEllipse(tmp.x(),tmp.y(),gridSize,gridSize) ;
@@ -330,6 +338,8 @@ void MainWindow::init(){
     //TODO!!!!!!!!!!!!!!!!做整个系统的初始化
     qsrand(time(NULL));
     ui->labelCurTime->setNum(timeNow=0);
+    routeWashDrops.clear();
+    routeWashDropCnt=0;
     routeIsMixing=false;
     routeMixPath.clear();
     routeMixTarget=routeMixStart=QPoint(-1,-1);
@@ -1068,10 +1078,10 @@ bool MainWindow::routeCheckConstraint(int drop, QPoint p){
     return true;
 }
 
-bool MainWindow::routeCheckPos(int drop, QPoint p){
-    //返回drop能否走p点
+bool MainWindow::routeCheckPos(int drop, QPoint p, bool washUsedUp=false){
+    //返回drop能否走p点。washUsedUp表明为朝出口移动的清洁液滴，此时应无视污染；否则应避免清洁液滴误清洗
     int x=p.x(), y=p.y();
-    return routeCheckConstraint(drop, p) && (histDrop[x][y].size()==0 || histDrop[x][y].find(drop)!=histDrop[x][y].end());
+    return routeCheckConstraint(drop, p) && (washUsedUp || histDrop[x][y].size()==0 || histDrop[x][y].find(drop)!=histDrop[x][y].end());
 }
 
 QPoint MainWindow::routeGetDropPos(int drop){
@@ -1088,7 +1098,10 @@ void MainWindow::routePlaceDrop(int drop, QPoint p){
     nowDrop[x][y]=drop;
     routeSetDropPos(drop, p);
     if(drop<0){
-        histDrop[x][y].clear();
+        if(histDrop[x][y].size()>0 && routeWashDropCap[drop+MAXM]>0){
+            routeWashDropCap[drop+MAXM]--;
+            histDrop[x][y].clear();
+        }
     } else histDrop[x][y][drop] = histDrop[x][y][drop] + 1;
 }
 
@@ -1098,18 +1111,25 @@ void MainWindow::routeMoveDrop(int drop, QPoint p1, QPoint p2){
     nowDrop[p1.x()][p1.y()]=0;
 }
 
-void MainWindow::routeBFS(int drop, QPoint s){
+void MainWindow::routeBFS(int drop, QPoint s, bool washUsedUp=false){
     //从drop所在位置s开始BFS
     bfsQue.clear();
     bfsQue.push_back(s);
+    memset(bfsWashDis,0,sizeof(bfsWashDis)) ;
     memset(bfsDis,0,sizeof(bfsDis));
-    bfsDis[s.x()][s.y()]=1;
+    bfsDis[s.x()][s.y()]=bfsWashDis[s.x()][s.y()]=1;
     while(!bfsQue.empty()){
         QPoint a=bfsQue.first();
         bfsQue.pop_front();
         for(int i=0;i<MOVEDIRNUM;++i){
             int x=a.x()+dir[i][0], y=a.y()+dir[i][1];
-            if(outGridRange(QPoint(x,y)) || !routeCheckPos(drop, QPoint(x,y)) || routeBfsBan[x][y]) continue;
+            if(!outGridRange(QPoint(x,y)) && routeCheckConstraint(drop, QPoint(x,y))) {
+                if(!bfsWashDis[x][y]){
+                    bfsWashDis[x][y]=bfsDis[a.x()][a.y()]+1;
+                    bfsPre[x][y]=a;
+                }
+            }
+            if(outGridRange(QPoint(x,y)) || !routeCheckPos(drop, QPoint(x,y), washUsedUp) || routeBfsBan[x][y]) continue;
             if(drop<0 && routeWashBan[x][y]) continue; //禁止清洗液滴进入
             if(!bfsDis[x][y]){
                 bfsDis[x][y]=bfsDis[a.x()][a.y()]+1;
@@ -1313,8 +1333,8 @@ bool MainWindow::routeGetMixTarget(int drop, QPoint p, int mixLen){
                     routeGetPath(p, routeMixStart) ;
                     routeMixPath = routeBfsPath ;
                     int x = routeMixStart.x() , y = routeMixStart.y() , ox = ((x==i) ? (i+1) :(i)) ;
-                    for(int ty=y+1;ty<=y+mixLen-1;++ty) routeMixPath.append(QPoint(x,ty));
-                    for(int ty=y+mixLen-1;ty>=j;--ty)   routeMixPath.append(QPoint(ox,ty));
+                    for(int ty=y+1;ty<=j+mixLen-1;++ty) routeMixPath.append(QPoint(x,ty));
+                    for(int ty=j+mixLen-1;ty>=j;--ty)   routeMixPath.append(QPoint(ox,ty));
                     for(int ty=j;ty<=y;++ty)            routeMixPath.append(QPoint(x,ty));
                 }
             }
@@ -1322,6 +1342,60 @@ bool MainWindow::routeGetMixTarget(int drop, QPoint p, int mixLen){
     }
     if(routeMixTarget==QPoint(-1,-1)) return false;
     else return true;
+}
+
+void MainWindow::routeHandleWashDrop(){
+    //处理清洁液滴
+    bool res=false;
+    for(int i=0;i<routeWashDrops.length();++i){
+        int drop = routeWashDrops.at(i) ;
+        QPoint p = routeGetDropPos(drop) ;
+        if(routeWashDropCap[drop+MAXM]==0){
+            //应当到清洁液滴出口
+            if(p == routeWashOutPort){
+                routeWashDrops.pop_front() ;
+                --i ;
+                continue ;
+            } else{
+                routeBFS(drop, p, true) ;
+                if(bfsDis[routeWashOutPort.x()][routeWashOutPort.y()]){
+                    QPoint nxt = routeGetNextPos(p, routeWashOutPort) ;
+                    routeMoveDrop(drop, p, nxt) ;
+                }
+            }
+        } else{
+            res = true ;
+            routeBFS(drop, p, false) ;
+            int minValue = INF ;
+            QPoint target=QPoint(-1,-1);
+            for(int x=1;x<=col;++x){
+                for(int y=1;y<=row;++y){
+                    if(bfsWashDis[x][y]){
+                        int value = bfsWashDis[x][y]-1-routeCalcBlockValue(QPoint(x,y)) ;
+                        if(value < minValue){
+                            minValue = value;
+                            target = QPoint(x,y) ;
+                        }
+                    }
+                }
+            }
+            if(target!=QPoint(-1,-1)){
+                QPoint nxt = routeGetNextPos(p, target) ;
+                routeMoveDrop(drop, p, nxt) ;
+                if(routeWashDropCap[drop+MAXM]==0) res=false;
+            }
+        }
+    }
+    if(!res && routeCheckPos(-MAXM, routeWashInPort) && !nowDrop[routeWashInPort.x()][routeWashInPort.y()]){
+        routeBFS(-MAXM, routeWashInPort) ;
+        for(int x=1;x<=col;++x){
+            for(int y=1;y<=row;++y){
+                if(bfsWashDis[x][y] && histDrop[x][y].size()>0){
+                    routePlaceDrop(--routeWashDropCnt, routeWashInPort) ;
+                }
+            }
+        }
+    }
 }
 
 void MainWindow::routeNextStep(){
@@ -1395,11 +1469,26 @@ void MainWindow::routeNextStep(){
             }
         }
     } else if(oper.opt==6){
-        //Mix  TODO
+        //Mix
         int drop=oper.drop1, mixLen=oper.mixLen;
         QPoint p=routeGetDropPos(drop) ;
-        routeGetMixTarget(drop, p, mixLen) ;
+        debug(QString("routeMixPath.length():%1  routeIsMixing:%2").arg(routeMixPath.length()).arg(routeIsMixing));
+        if(routeIsMixing || routeGetMixTarget(drop, p, mixLen)){
+            routeIsMixing = true;
+            debug(QString("routeMixStart:(%1,%2) routeMixTarget(%3,%4)").arg(routeMixStart.x()).arg(routeMixStart.y()).arg(routeMixTarget.x()).arg(routeMixTarget.y())) ;
+            if(routeMixPath.length()>1)  debug(QString("Mix. Next Point:(%1,%2)").arg(routeMixPath.at(1).x()).arg(routeMixPath.at(1).y()));
+            if(routeMixPath.length()>1 && routeCheckPos(drop, routeMixPath.at(1))){
+                routeMoveDrop(drop,routeMixPath.at(0),routeMixPath.at(1)) ;
+                routeMixPath.pop_front();
+            }
+            if(routeMixPath.length()==1){
+                routeIsMixing = false;
+                memset(routeWashBan,0,sizeof(routeWashBan));
+                routeOperPoint++;
+            }
+        }
     }
+    routeHandleWashDrop();
     ui->labelCurTime->setNum(++timeNow);
     if(!playingAll) ui->actionNextStep->setEnabled(true);
     update();
