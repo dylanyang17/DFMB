@@ -41,12 +41,14 @@ MainWindow::MainWindow(QWidget *parent) :
 void MainWindow::debugPreLoad()
 {
     if(debugOn){
-        int T=1;
+        int T=5;
         if(T==0){
             filePath=tr("E:/作业及课件/大二小学期/作业/贵系程设/Week1/Week1/Input/testcase0.txt");
         }
         else if(T==1){
             filePath=tr("E:/作业及课件/大二小学期/作业/贵系程设/Week1/Week1/Input/testcase1.txt");
+        } else if(T==5){
+            filePath=tr("E:/作业及课件/大二小学期/作业/贵系程设/Week1/Week1/Input/testcasewash.txt");
         }
 //        parsePortStr(inPortStr, col, row);
 //        inPortList=tmpList;
@@ -338,6 +340,9 @@ void MainWindow::init(){
     //TODO!!!!!!!!!!!!!!!!做整个系统的初始化
     qsrand(time(NULL));
     ui->labelCurTime->setNum(timeNow=0);
+    routeSplitMid=false;
+    routeSplitPath.clear();
+    routeSplitTarget=QPoint(-1,-1);
     routeWashDrops.clear();
     routeWashDropCnt=0;
     routeIsMixing=false;
@@ -1123,7 +1128,7 @@ void MainWindow::routeBFS(int drop, QPoint s, bool washUsedUp=false){
         bfsQue.pop_front();
         for(int i=0;i<MOVEDIRNUM;++i){
             int x=a.x()+dir[i][0], y=a.y()+dir[i][1];
-            if(!outGridRange(QPoint(x,y)) && routeCheckConstraint(drop, QPoint(x,y))) {
+            if(!outGridRange(QPoint(x,y)) && routeCheckConstraint(drop, QPoint(x,y)) && !routeWashBan[x][y]) {
                 if(!bfsWashDis[x][y]){
                     bfsWashDis[x][y]=bfsDis[a.x()][a.y()]+1;
                     bfsPre[x][y]=a;
@@ -1194,6 +1199,7 @@ bool MainWindow::routeGetMergeTarget(int drop1, QPoint p1, int drop2, QPoint p2)
         for(int y=2;y<=row;++y){ //不在最下面一排进行Merge，且只进行左右Merge
             if(!histDrop[x][y].size() && !histDrop[x][y-1].size()){ //保证下面的点可以走
 
+                memset(routeBfsBan,0,sizeof(routeBfsBan));
                 routeBfsBan[x][y-1]=routeBfsBan[x][y]=true;
              //   debug(QString("TTT1, (%1,%2)").arg(x).arg(y)) ;
                 routeBFS(drop1, p1);
@@ -1219,9 +1225,9 @@ bool MainWindow::routeGetMergeTarget(int drop1, QPoint p1, int drop2, QPoint p2)
                             debug("updated");
                         }
                     }
-                    memset(routeBfsBan,0,sizeof(routeBfsBan));
                 }
 
+                memset(routeBfsBan,0,sizeof(routeBfsBan));
                 routeBfsBan[x][y-1]=routeBfsBan[x][y]=true;
                 routeBFS(drop1, p1);
                 if(bfsDis[x+1][y]){
@@ -1246,7 +1252,6 @@ bool MainWindow::routeGetMergeTarget(int drop1, QPoint p1, int drop2, QPoint p2)
                   //          debug("updated");
                         }
                     }
-                    memset(routeBfsBan,0,sizeof(routeBfsBan));
                 }
             }
         }
@@ -1350,7 +1355,7 @@ void MainWindow::routeHandleWashDrop(){
     for(int i=0;i<routeWashDrops.length();++i){
         int drop = routeWashDrops.at(i) ;
         QPoint p = routeGetDropPos(drop) ;
-        debug(QString("wash. drop:%1 nowPos:(%2,%3)").arg(drop).arg(p.x()).arg(p.y())) ;
+       // debug(QString("wash. drop:%1 nowPos:(%2,%3)").arg(drop).arg(p.x()).arg(p.y())) ;
         if(routeWashDropCap[drop+MAXM]==0){
             //应当到清洁液滴出口
             if(p == routeWashOutPort){
@@ -1382,25 +1387,58 @@ void MainWindow::routeHandleWashDrop(){
             }
             if(target!=QPoint(-1,-1)){
                 QPoint nxt = routeGetNextPos(p, target) ;
-                debug(QString("wash. drop:%1 nxtPos:(%2,%3) target:(%4,%5)").arg(drop).arg(nxt.x()).arg(nxt.y()).arg(target.x()).arg(target.y())) ;
+          //      debug(QString("wash. drop:%1 nxtPos:(%2,%3) target:(%4,%5)").arg(drop).arg(nxt.x()).arg(nxt.y()).arg(target.x()).arg(target.y())) ;
                 routeMoveDrop(drop, p, nxt) ;
                 if(routeWashDropCap[drop+MAXM]==0) res=false;
             }
         }
     }
+    //debug(QString("wash. res:%1 routeWashDropCnt:%2").arg(res).arg(routeWashDropCnt)) ;
     if(!res && routeCheckPos(-MAXM, routeWashInPort) && !nowDrop[routeWashInPort.x()][routeWashInPort.y()]){
         routeBFS(-MAXM, routeWashInPort) ;
+        bool suc=false;
         for(int x=1;x<=col;++x){
             for(int y=1;y<=row;++y){
                 if(bfsWashDis[x][y] && histDrop[x][y].size()>0){
-                    routePlaceDrop(--routeWashDropCnt, routeWashInPort) ;
-                    routeWashDrops.append(routeWashDropCnt) ;
-                    routeWashDropCap[routeWashDropCnt+MAXM] = 3;
-                    break ;
+                    suc=true;
+                }
+            }
+        }
+        if(suc){
+            routePlaceDrop(--routeWashDropCnt, routeWashInPort) ;
+            routeWashDrops.append(routeWashDropCnt) ;
+            routeWashDropCap[routeWashDropCnt+MAXM] = 3;
+        }
+    }
+}
+
+bool MainWindow::routeGetSplitTarget(int drop, QPoint p){
+    int minValue = INF;
+    routeSplitTarget = QPoint(-1,-1);
+    routeSplitPath.clear() ;
+    for(int x=2;x<col;++x){
+        for(int y=2;y<=row;++y){
+            memset(routeBfsBan,0,sizeof(routeBfsBan)) ;
+            routeBfsBan[x-1][y]=routeBfsBan[x+1][y]=routeBfsBan[x-1][y-1]=routeBfsBan[x+1][y-1]=true ;
+            routeBFS(drop, p);
+            if(bfsDis[x][y]){
+                int value = bfsDis[x][y]-1+routeCalcBlockValue(QPoint(x,y)) ;
+                if(value < minValue){
+                    minValue = value ;
+                    routeSplitTarget = QPoint(x,y) ;
                 }
             }
         }
     }
+    if(routeSplitTarget!=QPoint(-1,-1)){
+        for(int k=0;k<BANDIRNUM;++k){
+            int x=routeSplitTarget.x()+dir[k][0], y=routeSplitTarget.y()+dir[k][1];
+            routeWashBan[x][y]=true;
+        }
+        routeGetPath(p, routeSplitTarget) ;
+        return true;
+    }
+    return false ;
 }
 
 void MainWindow::routeNextStep(){
@@ -1414,7 +1452,29 @@ void MainWindow::routeNextStep(){
     debug("test2");
 
     if(oper.opt==2){
-        //Split
+        //Split !!!清空routeWashBan
+        int drop1=oper.drop1, drop2=oper.drop2, drop3=oper.drop3;
+        QPoint p = routeGetDropPos(drop1) ;
+        if(routeSplitTarget!=QPoint(-1,-1) || routeGetSplitTarget(drop1, p)){
+            QPoint p1 = routeSplitTarget , p2 = routeSplitTarget + QPoint(-1,0) , p3 = routeSplitTarget + QPoint(1,0) ;
+            if(routeSplitMid){
+                notAlone[p2.x()][p2.y()] = notAlone[p3.x()][p3.y()] = false ;
+                midState[p1.x()][p1.y()] = QPoint(0, 0) ;
+                nowDrop[p1.x()][p1.y()] = 0 ;
+                routeSplitMid=false;
+                routeOperPoint++;
+                memset(routeWashBan,0,sizeof(routeWashBan)) ;
+            } else if(routeSplitPath.length()==1){
+                routeSplitMid=true;
+                routePlaceDrop(drop2, routeSplitTarget+QPoint(-1,0)) ;
+                routePlaceDrop(drop3, routeSplitTarget+QPoint(1,0)) ;
+                notAlone[p2.x()][p2.y()] = notAlone[p3.x()][p3.y()] = true ;
+                midState[p1.x()][p1.y()] = QPoint(1, 1) ;
+            } else if(routeSplitPath.length()>1 && routeCheckPos(drop1, routeSplitPath.at(1))){
+                routeMoveDrop(drop1, routeSplitPath.at(0), routeSplitPath.at(1)) ;
+                routeSplitPath.pop_front() ;
+            }
+        }
     } else if(oper.opt==3){
         //Merge
         int drop1=oper.drop1, drop2=oper.drop2, drop3=oper.drop3;

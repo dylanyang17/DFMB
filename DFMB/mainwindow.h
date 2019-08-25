@@ -123,6 +123,7 @@ public:
     int calcChebyshevDis(QPoint a, QPoint b);
     bool routeGetMixTarget(int drop, QPoint p, int mixLen);
     void routeHandleWashDrop();
+    bool routeGetSplitTarget(int drop, QPoint p);
 private slots:
 
     void on_actionSetDFMB_triggered();
@@ -200,6 +201,9 @@ private:
     QPoint routeMergeTarget1, routeMergeTarget2;                //Merge操作的两个目标点
     QList<QPoint> routeMergePath1, routeMergePath2;             //Merge操作的两条路径
     bool routeMergeMid;                                         //是否处于Merge中间态
+    QPoint routeSplitTarget;                                    //Split操作的目标点
+    QList<QPoint> routeSplitPath;                               //Split路径
+    bool routeSplitMid;                                         //是否处于Split中间态
     QPoint routeMixTarget;                                      //Mix操作的左下角
     QPoint routeMixStart;                                       //Mix操作的起始点
     QList<QPoint> routeMixPath;                                 //Mix操作的路径
