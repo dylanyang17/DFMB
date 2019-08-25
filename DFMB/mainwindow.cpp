@@ -577,7 +577,7 @@ void MainWindow::openFileWithPath(QString path){
     }
     if(ret!=-1){
         routeParseFile();
-        routeInit();
+        if(ui->actionRoute->isChecked()) routeInit();
     }
     init();
 }
@@ -909,6 +909,7 @@ void MainWindow::routeInit(){
     memset(routeOutPortOfDrop,0,sizeof(routeOutPortOfDrop));
     memset(routeCanOutput,0,sizeof(routeCanOutput));
     memset(routeLastMixTime,0,sizeof(routeLastMixTime));
+    int tmpNowDrop[MAXN][MAXN] ;
     routeOperations.clear();
     routeDropNum=0;
     routeInPortList.clear();
@@ -916,6 +917,7 @@ void MainWindow::routeInit(){
     routeWashInPort  = QPoint(1,row/2)   ;
     routeWashOutPort = QPoint(col,row/2) ;
     for(int i=0;i<=timeLim;++i){
+        memcpy(tmpNowDrop, routeNowDrop, sizeof(tmpNowDrop)) ;
         for(int j=0;j<routeInstructions[i].length();++j){
             RouteInstruction inst = routeInstructions[i].at(j) ;
             RouteOperation oper;
@@ -923,6 +925,9 @@ void MainWindow::routeInit(){
             oper.oriTime = i;
             if(inst.opt==1){
                 //Move
+//                int drop = tmpNowDrop[inst.args.at(0)][inst.args.at(1)];
+//                routeNowDrop[inst.args.at(2)][inst.args.at(3)] = drop;
+//                if(routeNowDrop[inst.args.at(0)][inst.args.at(1)] == drop) routeNowDrop[inst.args.at(0)][inst.args.at(1)] = 0 ;
                 std::swap(routeNowDrop[inst.args.at(0)][inst.args.at(1)], routeNowDrop[inst.args.at(2)][inst.args.at(3)]);
             } else if(inst.opt==2){
                 //Split
@@ -1863,6 +1868,7 @@ void MainWindow::on_actionRoute_triggered()
     if(ui->actionRoute->isChecked()){
         ui->actionWash->setChecked(true);
         ui->actionPreviousStep->setEnabled(false);
+        routeInit();
         //TODO
     } else{
         ui->actionPreviousStep->setEnabled(true);
