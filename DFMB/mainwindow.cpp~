@@ -15,13 +15,16 @@
 #include <QException>
 #include <QSound>
 #include <algorithm>
-#include <QMediaPlayer>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    soundMove = new QSound(soundMovePath);
+    soundSplit1 = new QSound(soundSplit1Path);
+    soundSplit2 = new QSound(soundSplit2Path);
+    soundMerge = new QSound(soundMergePath);
     gridSize=40;
     tinySize=gridSize/5;
     filePath="./";
@@ -574,11 +577,7 @@ int MainWindow::getMidState(int x1, int y1, int x2, int y2){
 
 void MainWindow::instMove(int x1, int y1,int x2, int y2, bool rev){
     //从x1,y1移动到x2,y2，rev为true时表明撤销移动
-    if(ui->actionSound->isChecked()) {
-        QMediaPlayer *player = new QMediaPlayer(this) ;
-        player->setMedia(QUrl::fromLocalFile(soundMovePath)) ;
-        player->play();
-    }
+    if(ui->actionSound->isChecked()) soundMove->play();
     if(!rev) {
         int drop=nowDrop[x1][y1];
         nowDrop[x2][y2] = drop ;
@@ -595,11 +594,7 @@ void MainWindow::instMove(int x1, int y1,int x2, int y2, bool rev){
 
 void MainWindow::instSplit1(int x1, int y1,int x2, int y2, int x3, int y3, bool rev){
     //从x1,y1分裂到x2,y2和x3,y3，rev为true时表明撤销分裂的首步
-    if(ui->actionSound->isChecked()) {
-        QMediaPlayer *player = new QMediaPlayer(this) ;
-        player->setMedia(QUrl::fromLocalFile(soundSplit1Path)) ;
-        player->play();
-    }
+    if(ui->actionSound->isChecked()) soundSplit1->play();
     if(!rev){
         nowDrop[x2][y2] = ++dropCnt ;
         nowDrop[x3][y3] = ++dropCnt ;
@@ -635,11 +630,7 @@ void MainWindow::instMerge1(int x1, int y1, int x2, int y2, int x3, int y3, bool
 
 void MainWindow::instSplit2(int x1, int y1,int x2, int y2, int x3, int y3, bool rev){
     //从x1,y1分裂到x2,y2和x3,y3，rev为true时表明撤销分裂的第二步
-    if(ui->actionSound->isChecked()) {
-        QMediaPlayer *player = new QMediaPlayer(this) ;
-        player->setMedia(QUrl::fromLocalFile(soundSplit2Path)) ;
-        player->play();
-    }
+    if(ui->actionSound->isChecked()) soundSplit2->play();
     if(!rev){
         disapDropStack.push(nowDrop[x1][y1]);
         nowDrop[x1][y1]=0;
@@ -655,11 +646,7 @@ void MainWindow::instSplit2(int x1, int y1,int x2, int y2, int x3, int y3, bool 
 
 void MainWindow::instMerge2(int x1, int y1, int x2, int y2, int x3, int y3, bool rev){
     //从x1,y1和x2,y2合并到x3,y3，rev为true是表示撤销合并的第二步
-   if(ui->actionSound->isChecked()) {
-       QMediaPlayer *player = new QMediaPlayer(this) ;
-       player->setMedia(QUrl::fromLocalFile(soundMergePath)) ;
-       player->play();
-   }
+   if(ui->actionSound->isChecked()) soundMerge->play();
     if(!rev){
         disapDropStack.push(nowDrop[x1][y1]);
         disapDropStack.push(nowDrop[x2][y2]);
