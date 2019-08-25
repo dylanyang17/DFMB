@@ -124,6 +124,7 @@ public:
     bool routeGetMixTarget(int drop, QPoint p, int mixLen);
     bool routeGetSplitTarget(int drop, QPoint p);
     bool routeHandleWashDrop();
+    bool routeGetOutputTarget(int drop, QPoint p);
 private slots:
 
     void on_actionSetDFMB_triggered();
@@ -214,6 +215,10 @@ private:
     int routeWashDropCap[MAXM+5];                               //记录清洁液滴剩余清洗容量，记得每次生成新清洁液滴时初始化
     int bfsWashDis[MAXN][MAXN];                                 //BFS过程得到的某格子能否清洗到的标记并记录距离（路径上不经过其它污染）
     bool routeMoved[2*MAXM+5];                                  //判断液滴是否这一步经过了操作
+    int routeCriticalDrop;                                      //当前操作的液滴
+    bool routeMoveSuc;                                          //是否成功对当前操作的液滴进行单步操作
+    bool routeIsOutputing;                                      //是否已经找到Output路径
+    QList<QPoint> routeOutputPath;
 
     void paintEvent(QPaintEvent *);
     void debugPreLoad();
