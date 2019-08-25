@@ -1298,6 +1298,7 @@ bool MainWindow::routeGetMixTarget(int drop, QPoint p, int mixLen){
             if(!fail){
                 value += minDis*2*mixLen;
                 if(value < minValue){
+                    minValue = value;
                     routeMixPath.clear();
                     routeMixStart=tmpStart;
                     routeMixTarget=QPoint(i,j);
@@ -1332,9 +1333,12 @@ bool MainWindow::routeGetMixTarget(int drop, QPoint p, int mixLen){
             if(!fail){
                 value += minDis*2*mixLen;
                 if(value < minValue){
+                    minValue = value;
                     routeMixPath.clear();
                     routeMixStart=tmpStart;
                     routeMixTarget=QPoint(i,j);
+                //    debug(QString("routeMix. 竖放 value:%1 routeMixStart:(%2,%3) routeMixTarget:(%4,%5)").arg(value).arg(routeMixStart.x())
+                 //         .arg(routeMixStart.y()).arg(routeMixTarget.x()).arg(routeMixTarget.y())) ;
                     routeGetPath(p, routeMixStart) ;
                     routeMixPath = routeBfsPath ;
                     int x = routeMixStart.x() , y = routeMixStart.y() , ox = ((x==i) ? (i+1) :(i)) ;
@@ -1537,10 +1541,10 @@ void MainWindow::routeNextStep(){
         //Mix
         int drop=oper.drop1, mixLen=oper.mixLen;
         QPoint p=routeGetDropPos(drop) ;
-        //debug(QString("routeMixPath.length():%1  routeIsMixing:%2").arg(routeMixPath.length()).arg(routeIsMixing));
+        debug(QString("routeMixPath.length():%1  routeIsMixing:%2").arg(routeMixPath.length()).arg(routeIsMixing));
         if(routeIsMixing || routeGetMixTarget(drop, p, mixLen)){
             routeIsMixing = true;
-            //debug(QString("routeMixStart:(%1,%2) routeMixTarget(%3,%4)").arg(routeMixStart.x()).arg(routeMixStart.y()).arg(routeMixTarget.x()).arg(routeMixTarget.y())) ;
+            debug(QString("routeMixStart:(%1,%2) routeMixTarget(%3,%4)").arg(routeMixStart.x()).arg(routeMixStart.y()).arg(routeMixTarget.x()).arg(routeMixTarget.y())) ;
             if(routeMixPath.length()>1)  debug(QString("Mix. Next Point:(%1,%2)").arg(routeMixPath.at(1).x()).arg(routeMixPath.at(1).y()));
             if(routeMixPath.length()>1 && routeCheckPos(drop, routeMixPath.at(1))){
                 routeMoveDrop(drop,routeMixPath.at(0),routeMixPath.at(1)) ;
