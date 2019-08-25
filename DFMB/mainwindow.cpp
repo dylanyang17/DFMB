@@ -250,13 +250,13 @@ void MainWindow::paintEvent(QPaintEvent *event){
                 }
                 if(ui->actionRoute->isChecked() && nowDrop[i][j]<0){
                     QColor color;
-                    if(routeWashDropCap[nowDrop[i][j]]==3)
+                    if(routeWashDropCap[nowDrop[i][j]+MAXM]==3)
                         color=QColor(58,159,177) ;
-                    else if(routeWashDropCap[nowDrop[i][j]]==2)
+                    else if(routeWashDropCap[nowDrop[i][j]+MAXM]==2)
                         color=QColor(47,138,154) ;
-                    else if(routeWashDropCap[nowDrop[i][j]]==1)
+                    else if(routeWashDropCap[nowDrop[i][j]+MAXM]==1)
                         color=QColor(28,110,125) ;
-                    else if(routeWashDropCap[nowDrop[i][j]]==0)
+                    else if(routeWashDropCap[nowDrop[i][j]+MAXM]==0)
                         color=QColor(54,100,108) ;
                     painter.setBrush(QBrush(color,Qt::SolidPattern));
                     tmp = getPoint(i,j+1) ;
@@ -1195,7 +1195,7 @@ bool MainWindow::routeGetMergeTarget(int drop1, QPoint p1, int drop2, QPoint p2)
             if(!histDrop[x][y].size() && !histDrop[x][y-1].size()){ //保证下面的点可以走
 
                 routeBfsBan[x][y-1]=routeBfsBan[x][y]=true;
-                debug(QString("TTT1, (%1,%2)").arg(x).arg(y)) ;
+             //   debug(QString("TTT1, (%1,%2)").arg(x).arg(y)) ;
                 routeBFS(drop1, p1);
                 if(bfsDis[x-1][y]){
                     routeGetPath(p1, QPoint(x-1,y)) ;
@@ -1209,7 +1209,7 @@ bool MainWindow::routeGetMergeTarget(int drop1, QPoint p1, int drop2, QPoint p2)
                         routeGetPath(p2, QPoint(x+1,y)) ;
                         tmpPath2 = routeBfsPath ;
                         int value = tmpPath1.length()+tmpPath2.length()-2+routeCalcBlockValue(QPoint(x,y)) ;
-                        debug(QString("TTT2, value:%1").arg(value)) ;
+                //        debug(QString("TTT2, value:%1").arg(value)) ;
                         if(value<minValue){
                             minValue=value;
                             routeMergeTarget1 = QPoint(x-1,y) ;
@@ -1236,14 +1236,14 @@ bool MainWindow::routeGetMergeTarget(int drop1, QPoint p1, int drop2, QPoint p2)
                         routeGetPath(p2, QPoint(x-1,y)) ;
                         tmpPath2 = routeBfsPath ;
                         int value = tmpPath1.length()+tmpPath2.length()-2+routeCalcBlockValue(QPoint(x,y)) ;
-                        debug(QString("TTT3, value:%1").arg(value)) ;
+                  //      debug(QString("TTT3, value:%1").arg(value)) ;
                         if(value<minValue){
                             minValue=value;
                             routeMergeTarget1 = QPoint(x+1,y) ;
                             routeMergeTarget2 = QPoint(x-1,y) ;
                             routeMergePath1 = tmpPath1 ;
                             routeMergePath2 = tmpPath2 ;
-                            debug("updated");
+                  //          debug("updated");
                         }
                     }
                     memset(routeBfsBan,0,sizeof(routeBfsBan));
@@ -1350,6 +1350,7 @@ void MainWindow::routeHandleWashDrop(){
     for(int i=0;i<routeWashDrops.length();++i){
         int drop = routeWashDrops.at(i) ;
         QPoint p = routeGetDropPos(drop) ;
+        debug(QString("wash. drop:%1 nowPos:(%2,%3)").arg(drop).arg(p.x()).arg(p.y())) ;
         if(routeWashDropCap[drop+MAXM]==0){
             //应当到清洁液滴出口
             if(p == routeWashOutPort){
@@ -1370,7 +1371,7 @@ void MainWindow::routeHandleWashDrop(){
             QPoint target=QPoint(-1,-1);
             for(int x=1;x<=col;++x){
                 for(int y=1;y<=row;++y){
-                    if(bfsWashDis[x][y]){
+                    if(bfsWashDis[x][y] && histDrop[x][y].size()>0){
                         int value = bfsWashDis[x][y]-1-routeCalcBlockValue(QPoint(x,y)) ;
                         if(value < minValue){
                             minValue = value;
@@ -1381,6 +1382,7 @@ void MainWindow::routeHandleWashDrop(){
             }
             if(target!=QPoint(-1,-1)){
                 QPoint nxt = routeGetNextPos(p, target) ;
+                debug(QString("wash. drop:%1 nxtPos:(%2,%3) target:(%4,%5)").arg(drop).arg(nxt.x()).arg(nxt.y()).arg(target.x()).arg(target.y())) ;
                 routeMoveDrop(drop, p, nxt) ;
                 if(routeWashDropCap[drop+MAXM]==0) res=false;
             }
@@ -1392,6 +1394,9 @@ void MainWindow::routeHandleWashDrop(){
             for(int y=1;y<=row;++y){
                 if(bfsWashDis[x][y] && histDrop[x][y].size()>0){
                     routePlaceDrop(--routeWashDropCnt, routeWashInPort) ;
+                    routeWashDrops.append(routeWashDropCnt) ;
+                    routeWashDropCap[routeWashDropCnt+MAXM] = 3;
+                    break ;
                 }
             }
         }
@@ -1472,10 +1477,10 @@ void MainWindow::routeNextStep(){
         //Mix
         int drop=oper.drop1, mixLen=oper.mixLen;
         QPoint p=routeGetDropPos(drop) ;
-        debug(QString("routeMixPath.length():%1  routeIsMixing:%2").arg(routeMixPath.length()).arg(routeIsMixing));
+        //debug(QString("routeMixPath.length():%1  routeIsMixing:%2").arg(routeMixPath.length()).arg(routeIsMixing));
         if(routeIsMixing || routeGetMixTarget(drop, p, mixLen)){
             routeIsMixing = true;
-            debug(QString("routeMixStart:(%1,%2) routeMixTarget(%3,%4)").arg(routeMixStart.x()).arg(routeMixStart.y()).arg(routeMixTarget.x()).arg(routeMixTarget.y())) ;
+            //debug(QString("routeMixStart:(%1,%2) routeMixTarget(%3,%4)").arg(routeMixStart.x()).arg(routeMixStart.y()).arg(routeMixTarget.x()).arg(routeMixTarget.y())) ;
             if(routeMixPath.length()>1)  debug(QString("Mix. Next Point:(%1,%2)").arg(routeMixPath.at(1).x()).arg(routeMixPath.at(1).y()));
             if(routeMixPath.length()>1 && routeCheckPos(drop, routeMixPath.at(1))){
                 routeMoveDrop(drop,routeMixPath.at(0),routeMixPath.at(1)) ;
