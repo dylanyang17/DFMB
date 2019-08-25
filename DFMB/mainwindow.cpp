@@ -345,6 +345,10 @@ void MainWindow::newDropColor(int type=0, QColor a=QColor(0,0,0), QColor b=QColo
 void MainWindow::init(){
     //TODO!!!!!!!!!!!!!!!!做整个系统的初始化
     qsrand(time(NULL));
+    if(!ui->actionRoute->isChecked()){
+        dropColor.clear();
+        for(int i=1;i<=MAXM-3;++i) newDropColor() ;
+    }
     ui->labelCurTime->setNum(timeNow=0);
     routeIsOutputing=false;
     routeOutputPath.clear();
