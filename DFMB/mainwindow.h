@@ -119,6 +119,7 @@ public:
     bool routeGetMergeTarget(int drop1, QPoint p1, int drop2, QPoint p2);
     int routeCalcBlockValue(QPoint p);
     int calcChebyshevDis(QPoint a, QPoint b);
+    bool routeGetMixTarget(int drop, QPoint p, int mixLen);
 private slots:
 
     void on_actionSetDFMB_triggered();
@@ -196,8 +197,12 @@ private:
     bool routeBfsBan[MAXN][MAXN];                               //Bfs中临时禁止走到的位置
     QPoint routeMergeTarget1, routeMergeTarget2;                //Merge操作的两个目标点
     QList<QPoint> routeMergePath1, routeMergePath2;             //Merge操作的两条路径
-    bool routeMergeMid;
-    static const int routeBlockK=3;                              //计算阻塞值乘上的权值
+    bool routeMergeMid;                                         //是否处于Merge中间态
+    QPoint routeMixTarget;                                      //Mix操作的左下角
+    QPoint routeMixStart;                                       //Mix操作的起始点
+    QList<QPoint> routeMixPath;                                 //Mix操作的路径
+    bool routeIsMixing;                                         //是否已经找到Mix路径
+    static const int routeBlockK=3;                             //计算阻塞值乘上的权值
 
     void paintEvent(QPaintEvent *);
     void debugPreLoad();

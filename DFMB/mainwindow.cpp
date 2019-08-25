@@ -333,6 +333,9 @@ void MainWindow::init(){
     //TODO!!!!!!!!!!!!!!!!做整个系统的初始化
     qsrand(time(NULL));
     ui->labelCurTime->setNum(timeNow=0);
+    routeIsMixing=false;
+    routeMixPath.clear();
+    routeMixTarget=routeMixStart=QPoint(-1,-1);
     routeMergeMid=false;
     routeMergePath1.clear();
     routeMergePath2.clear();
@@ -1227,6 +1230,87 @@ bool MainWindow::routeGetMergeTarget(int drop1, QPoint p1, int drop2, QPoint p2)
     } else return false;
 }
 
+bool MainWindow::routeGetMixTarget(int drop, QPoint p, int mixLen){
+    routeMixTarget = QPoint(-1,-1); //注意该Target为左下角，且可能横放或竖放
+    routeMixStart = QPoint(-1,-1);  //进入环的起始点
+    int minValue = INF;
+    routeBFS(drop, p);
+    for(int i=1;i<=col;++i){
+        for(int j=1;j<=row;++j){
+            //枚举Target
+            //横放
+            bool fail=false;
+            int value=0, minDis=INF;
+            QPoint tmpStart;
+            for(int t=1;t<=mixLen;++t){
+                if(outGridRange(QPoint(i+t-1,j)) || outGridRange(QPoint(i+t-1,j+1)) || !bfsDis[i+t-1][j] || !bfsDis[i+t-1][j+1]){
+                    fail=true ;
+                    break;
+                }
+                value += routeCalcBlockValue(QPoint(i+t-1,j)) + routeCalcBlockValue(QPoint(i+t-1,j+1)) ;
+                if(bfsDis[i+t-1][j]<minDis){
+                    minDis=bfsDis[i+t-1][j];
+                    tmpStart=QPoint(i+t-1,j);
+                }
+                if(bfsDis[i+t-1][j+1]<minDis){
+                    minDis=bfsDis[i+t-1][j+1];
+                    tmpStart=QPoint(i+t-1,j+1);
+                }
+            }
+            if(!fail){
+                value += minDis*2*mixLen;
+                if(value < minValue){
+                    routeMixPath.clear();
+                    routeMixStart=tmpStart;
+                    routeMixTarget=QPoint(i,j);
+                    routeGetPath(p, routeMixStart) ;
+                    routeMixPath = routeBfsPath ;
+                    int x = routeMixStart.x() , y = routeMixStart.y() , oy = ((y==j) ? (j+1) :(j)) ;
+                    for(int tx=x+1;tx<=i+mixLen-1;++tx) routeMixPath.append(QPoint(tx, y));
+                    for(int tx=i+mixLen-1;tx>=i;--tx)   routeMixPath.append(QPoint(tx, oy));
+                    for(int tx=i;tx<=x;++tx)            routeMixPath.append(QPoint(tx, y));
+                }
+            }
+
+            //竖放
+            fail=false;
+            value=0; minDis=INF;
+            tmpStart=QPoint(-1,-1);
+            for(int t=1;t<=mixLen;++t){
+                if(outGridRange(QPoint(i,j+t-1)) || outGridRange(QPoint(i+1,j+t-1)) || !bfsDis[i][j+t-1] || !bfsDis[i+1][j+t-1]){
+                    fail=true ;
+                    break;
+                }
+                value += routeCalcBlockValue(QPoint(i,j+t-1)) + routeCalcBlockValue(QPoint(i+1,j+t-1)) ;
+                if(bfsDis[i][j+t-1]<minDis){
+                    minDis=bfsDis[i][j+t-1];
+                    tmpStart=QPoint(i,j+t-1);
+                }
+                if(bfsDis[i+1][j+t-1]<minDis){
+                    minDis=bfsDis[i+1][j+t-1];
+                    tmpStart=QPoint(i+1,j+t-1);
+                }
+            }
+            if(!fail){
+                value += minDis*2*mixLen;
+                if(value < minValue){
+                    routeMixPath.clear();
+                    routeMixStart=tmpStart;
+                    routeMixTarget=QPoint(i,j);
+                    routeGetPath(p, routeMixStart) ;
+                    routeMixPath = routeBfsPath ;
+                    int x = routeMixStart.x() , y = routeMixStart.y() , ox = ((x==i) ? (i+1) :(i)) ;
+                    for(int ty=y+1;ty<=y+mixLen-1;++ty) routeMixPath.append(QPoint(x,ty));
+                    for(int ty=y+mixLen-1;ty>=j;--ty)   routeMixPath.append(QPoint(ox,ty));
+                    for(int ty=j;ty<=y;++ty)            routeMixPath.append(QPoint(x,ty));
+                }
+            }
+        }
+    }
+    if(routeMixTarget==QPoint(-1,-1)) return false;
+    else return true;
+}
+
 void MainWindow::routeNextStep(){
     if(routeOperPoint >= routeOperations.length()) return ;
 
@@ -1240,15 +1324,15 @@ void MainWindow::routeNextStep(){
     if(oper.opt==2){
         //Split
     } else if(oper.opt==3){
-        //Merge TODOTODOTODO
+        //Merge
         int drop1=oper.drop1, drop2=oper.drop2, drop3=oper.drop3;
         if(routeMergeTarget1!=QPoint(-1,-1) || routeGetMergeTarget(drop1, routeGetDropPos(drop1), drop2, routeGetDropPos(drop2))){
             QPoint p1=routeMergeTarget1, p2=routeMergeTarget2, p3=(p1+p2)/2 ;
             //有Target
-            debug(QString("Merge. Target1:(%1,%2)  Target2:(%3,%4)  Len1:%5  Len2:%6").arg(p1.x()).arg(p1.y()).arg(p2.x()).arg(p2.y())
-                  .arg(routeMergePath1.length()).arg(routeMergePath2.length()));
+          //  debug(QString("Merge. Target1:(%1,%2)  Target2:(%3,%4)  Len1:%5  Len2:%6").arg(p1.x()).arg(p1.y()).arg(p2.x()).arg(p2.y())
+          //        .arg(routeMergePath1.length()).arg(routeMergePath2.length()));
             if(routeMergeMid){
-                debug("test3");
+          //      debug("test3");
                 routeMergeMid=false;
                 nowDrop[p1.x()][p1.y()]=nowDrop[p2.x()][p2.y()]=0;
                 midState[p3.x()][p3.y()] = QPoint(0, 0) ;
@@ -1256,14 +1340,14 @@ void MainWindow::routeNextStep(){
                 memset(routeWashBan,0,sizeof(routeWashBan));
                 routeOperPoint++;
             } else if(routeMergePath1.length()==1 && routeMergePath2.length()==1){
-                debug("test4");
+          //      debug("test4");
                 routeMergeMid=true;
                 routePlaceDrop(drop3, p3);
                 midState[p3.x()][p3.y()] = QPoint(2, 1) ;
                 notAlone[p1.x()][p1.y()]=notAlone[p2.x()][p2.y()]=true ;
             }
             else{
-                debug("test5");
+          //      debug("test5");
                 if(routeMergePath1.length()>1 && routeCheckPos(drop1, routeMergePath1.at(1))){
                     routeMoveDrop(drop1,routeMergePath1.at(0),routeMergePath1.at(1)) ;
                     routeMergePath1.pop_front();
@@ -1298,7 +1382,10 @@ void MainWindow::routeNextStep(){
             }
         }
     } else if(oper.opt==6){
-        //Mix
+        //Mix  TODO
+        int drop=oper.drop1, mixLen=oper.mixLen;
+        QPoint p=routeGetDropPos(drop) ;
+        routeGetMixTarget(drop, p, mixLen) ;
     }
     ui->labelCurTime->setNum(++timeNow);
     if(!playingAll) ui->actionNextStep->setEnabled(true);
