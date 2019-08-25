@@ -122,8 +122,8 @@ public:
     int routeCalcBlockValue(QPoint p);
     int calcChebyshevDis(QPoint a, QPoint b);
     bool routeGetMixTarget(int drop, QPoint p, int mixLen);
-    void routeHandleWashDrop();
     bool routeGetSplitTarget(int drop, QPoint p);
+    bool routeHandleWashDrop();
 private slots:
 
     void on_actionSetDFMB_triggered();
@@ -213,6 +213,7 @@ private:
     QList<int> routeWashDrops;                                  //当前存活的清洁液滴，值为液滴编号(注意为负数)
     int routeWashDropCap[MAXM+5];                               //记录清洁液滴剩余清洗容量，记得每次生成新清洁液滴时初始化
     int bfsWashDis[MAXN][MAXN];                                 //BFS过程得到的某格子能否清洗到的标记并记录距离（路径上不经过其它污染）
+    bool routeMoved[2*MAXM+5];                                  //判断液滴是否这一步经过了操作
 
     void paintEvent(QPaintEvent *);
     void debugPreLoad();

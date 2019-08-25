@@ -41,12 +41,18 @@ MainWindow::MainWindow(QWidget *parent) :
 void MainWindow::debugPreLoad()
 {
     if(debugOn){
-        int T=5;
+        int T=2;
         if(T==0){
             filePath=tr("E:/作业及课件/大二小学期/作业/贵系程设/Week1/Week1/Input/testcase0.txt");
         }
         else if(T==1){
             filePath=tr("E:/作业及课件/大二小学期/作业/贵系程设/Week1/Week1/Input/testcase1.txt");
+        } else if(T==2){
+            filePath=tr("E:/作业及课件/大二小学期/作业/贵系程设/Week1/Week1/Input/testcase2.txt");
+        } else if(T==3){
+            filePath=tr("E:/作业及课件/大二小学期/作业/贵系程设/Week1/Week1/Input/testcase3.txt");
+        } else if(T==4){
+            filePath=tr("E:/作业及课件/大二小学期/作业/贵系程设/Week1/Week1/Input/testcaseerror.txt");
         } else if(T==5){
             filePath=tr("E:/作业及课件/大二小学期/作业/贵系程设/Week1/Week1/Input/testcasewash.txt");
         }
@@ -1353,9 +1359,9 @@ bool MainWindow::routeGetMixTarget(int drop, QPoint p, int mixLen){
     else return true;
 }
 
-void MainWindow::routeHandleWashDrop(){
-    //处理清洁液滴
-    bool res=false;
+bool MainWindow::routeHandleWashDrop(){
+    //处理清洁液滴，若清洁液滴有任何变动均返回true
+    bool res=false, ret=false; //res为有无剩余容量，ret为返回值
     for(int i=0;i<routeWashDrops.length();++i){
         int drop = routeWashDrops.at(i) ;
         QPoint p = routeGetDropPos(drop) ;
@@ -1364,13 +1370,17 @@ void MainWindow::routeHandleWashDrop(){
             //应当到清洁液滴出口
             if(p == routeWashOutPort){
                 routeWashDrops.pop_front() ;
+                nowDrop[routeWashOutPort.x()][routeWashOutPort.y()]=0;
                 --i ;
+                ret = true;
                 continue ;
             } else{
                 routeBFS(drop, p, true) ;
+               // debug(QString("washDrop:%1(usedUp) canGo:%2").arg(routeWashDrops.at(i)).arg(bfsDis[routeWashOutPort.x()][routeWashOutPort.y()])) ;
                 if(bfsDis[routeWashOutPort.x()][routeWashOutPort.y()]){
                     QPoint nxt = routeGetNextPos(p, routeWashOutPort) ;
                     routeMoveDrop(drop, p, nxt) ;
+                    ret = true;
                 }
             }
         } else{
@@ -1394,6 +1404,7 @@ void MainWindow::routeHandleWashDrop(){
           //      debug(QString("wash. drop:%1 nxtPos:(%2,%3) target:(%4,%5)").arg(drop).arg(nxt.x()).arg(nxt.y()).arg(target.x()).arg(target.y())) ;
                 routeMoveDrop(drop, p, nxt) ;
                 if(routeWashDropCap[drop+MAXM]==0) res=false;
+                ret = true;
             }
         }
     }
@@ -1412,8 +1423,10 @@ void MainWindow::routeHandleWashDrop(){
             routePlaceDrop(--routeWashDropCnt, routeWashInPort) ;
             routeWashDrops.append(routeWashDropCnt) ;
             routeWashDropCap[routeWashDropCnt+MAXM] = 3;
+            ret = true;
         }
     }
+    return ret;
 }
 
 bool MainWindow::routeGetSplitTarget(int drop, QPoint p){
@@ -1422,6 +1435,8 @@ bool MainWindow::routeGetSplitTarget(int drop, QPoint p){
     routeSplitPath.clear() ;
     for(int x=2;x<col;++x){
         for(int y=2;y<=row;++y){
+            if(histDrop[x-1][y].size()>0 || histDrop[x+1][y].size()>0 || histDrop[x-1][y-1].size()>0 || histDrop[x+1][y-1].size()>0)
+                continue ;
             memset(routeBfsBan,0,sizeof(routeBfsBan)) ;
             routeBfsBan[x-1][y]=routeBfsBan[x+1][y]=routeBfsBan[x-1][y-1]=routeBfsBan[x+1][y-1]=true ;
             routeBFS(drop, p);
@@ -1440,6 +1455,7 @@ bool MainWindow::routeGetSplitTarget(int drop, QPoint p){
             routeWashBan[x][y]=true;
         }
         routeGetPath(p, routeSplitTarget) ;
+        routeSplitPath = routeBfsPath ;
         return true;
     }
     return false ;
@@ -1450,33 +1466,46 @@ void MainWindow::routeNextStep(){
 
     ui->actionNextStep->setEnabled(false);
     memcpy(routeLastDrop, nowDrop, sizeof(nowDrop)) ;
+    memset(routeMoved,0,sizeof(routeMoved));
     debug("test1");
     RouteOperation oper = routeOperations.at(routeOperPoint);
     debugOper(oper);
     debug("test2");
+    bool moveSuc = false;
 
     if(oper.opt==2){
-        //Split !!!清空routeWashBan
+        //Split
         int drop1=oper.drop1, drop2=oper.drop2, drop3=oper.drop3;
         QPoint p = routeGetDropPos(drop1) ;
+        debug(QString("Split. drop:%1 routeSplitTarget:(%2,%3)").arg(drop1).arg(routeSplitTarget.x()).arg(routeSplitTarget.y())) ;
         if(routeSplitTarget!=QPoint(-1,-1) || routeGetSplitTarget(drop1, p)){
             QPoint p1 = routeSplitTarget , p2 = routeSplitTarget + QPoint(-1,0) , p3 = routeSplitTarget + QPoint(1,0) ;
             if(routeSplitMid){
                 notAlone[p2.x()][p2.y()] = notAlone[p3.x()][p3.y()] = false ;
                 midState[p1.x()][p1.y()] = QPoint(0, 0) ;
                 nowDrop[p1.x()][p1.y()] = 0 ;
+                routeMoved[drop1] = routeMoved[drop2] = routeMoved[drop3] = true ;
                 routeSplitMid=false;
                 routeOperPoint++;
                 memset(routeWashBan,0,sizeof(routeWashBan)) ;
+                routeSplitTarget=QPoint(-1,-1);
+                routeSplitPath.clear();
+                moveSuc = true;
             } else if(routeSplitPath.length()==1){
-                routeSplitMid=true;
-                routePlaceDrop(drop2, routeSplitTarget+QPoint(-1,0)) ;
-                routePlaceDrop(drop3, routeSplitTarget+QPoint(1,0)) ;
-                notAlone[p2.x()][p2.y()] = notAlone[p3.x()][p3.y()] = true ;
-                midState[p1.x()][p1.y()] = QPoint(1, 1) ;
+                if(routeCheckPos(drop1, p2) && routeCheckPos(drop1, p3)){
+                    routeSplitMid=true;
+                    routePlaceDrop(drop2, routeSplitTarget+QPoint(-1,0)) ;
+                    routePlaceDrop(drop3, routeSplitTarget+QPoint(1,0)) ;
+                    routeMoved[drop1] = routeMoved[drop2] = routeMoved[drop3] = true ;
+                    notAlone[p2.x()][p2.y()] = notAlone[p3.x()][p3.y()] = true ;
+                    midState[p1.x()][p1.y()] = QPoint(1, 1) ;
+                    moveSuc = true;
+                }
             } else if(routeSplitPath.length()>1 && routeCheckPos(drop1, routeSplitPath.at(1))){
                 routeMoveDrop(drop1, routeSplitPath.at(0), routeSplitPath.at(1)) ;
                 routeSplitPath.pop_front() ;
+                routeMoved[drop1] = true ;
+                moveSuc = true;
             }
         }
     } else if(oper.opt==3){
@@ -1494,23 +1523,34 @@ void MainWindow::routeNextStep(){
                 midState[p3.x()][p3.y()] = QPoint(0, 0) ;
                 notAlone[p1.x()][p1.y()]=notAlone[p2.x()][p2.y()]=false ;
                 memset(routeWashBan,0,sizeof(routeWashBan));
+                routeMergePath1.clear();
+                routeMergePath2.clear();
+                routeMergeTarget1=routeMergeTarget2=QPoint(-1,-1);
                 routeOperPoint++;
+                routeMoved[drop1+MAXM] = routeMoved[drop2+MAXM] = routeMoved[drop3+MAXM] = true ;
+                moveSuc = true;
             } else if(routeMergePath1.length()==1 && routeMergePath2.length()==1){
           //      debug("test4");
                 routeMergeMid=true;
                 routePlaceDrop(drop3, p3);
                 midState[p3.x()][p3.y()] = QPoint(2, 1) ;
                 notAlone[p1.x()][p1.y()]=notAlone[p2.x()][p2.y()]=true ;
+                routeMoved[drop1+MAXM] = routeMoved[drop2+MAXM] = routeMoved[drop3+MAXM] = true ;
+                moveSuc = true;
             }
             else{
           //      debug("test5");
                 if(routeMergePath1.length()>1 && routeCheckPos(drop1, routeMergePath1.at(1))){
                     routeMoveDrop(drop1,routeMergePath1.at(0),routeMergePath1.at(1)) ;
                     routeMergePath1.pop_front();
+                    routeMoved[drop1+MAXM] = true ;
+                    moveSuc = true;
                 }
                 if(routeMergePath2.length()>1 && routeCheckPos(drop2, routeMergePath2.at(1))){
                     routeMoveDrop(drop2,routeMergePath2.at(0),routeMergePath2.at(1)) ;
                     routeMergePath2.pop_front();
+                    routeMoved[drop2+MAXM] = true ;
+                    moveSuc = true;
                 }
             }
         }
@@ -1518,9 +1558,11 @@ void MainWindow::routeNextStep(){
         //Input
         int drop=oper.drop1;
         QPoint p=routeInPortList.at(routeInPortOfDrop[drop]-1);
-        if(routeCheckPos(drop, p)){
+        if(routeCheckPos(drop, p) && !nowDrop[p.x()][p.y()]){
             routePlaceDrop(drop, p);
             routeOperPoint++;
+            routeMoved[drop+MAXM] = true ;
+            moveSuc = true;
         }
     } else if(oper.opt==5){
         //Output
@@ -1530,11 +1572,15 @@ void MainWindow::routeNextStep(){
             routeSetDropPos(drop, QPoint(0,0));
             nowDrop[p.x()][p.y()]=0;
             routeOperPoint++;
+            routeMoved[drop+MAXM] = true ;
+            moveSuc = true;
         } else{
             routeBFS(drop, p);
             if(bfsDis[outPort.x()][outPort.y()]){
                 QPoint nxt = routeGetNextPos(p, outPort);
                 routeMoveDrop(drop, p, nxt);
+                routeMoved[drop+MAXM] = true;
+                moveSuc = true;
             }
         }
     } else if(oper.opt==6){
@@ -1549,6 +1595,8 @@ void MainWindow::routeNextStep(){
             if(routeMixPath.length()>1 && routeCheckPos(drop, routeMixPath.at(1))){
                 routeMoveDrop(drop,routeMixPath.at(0),routeMixPath.at(1)) ;
                 routeMixPath.pop_front();
+                routeMoved[drop+MAXM] = true;
+                moveSuc = true;
             }
             if(routeMixPath.length()==1){
                 routeIsMixing = false;
@@ -1557,7 +1605,33 @@ void MainWindow::routeNextStep(){
             }
         }
     }
-    routeHandleWashDrop();
+    bool washSuc = routeHandleWashDrop();
+    if(!moveSuc && !washSuc){
+        for(int x=1;x<=col;++x){
+            for(int y=1;y<=row;++y){
+                if(nowDrop[x][y]){
+                    int drop=nowDrop[x][y] ;
+                    if(!routeMoved[drop+MAXM]){
+                        routeMoved[drop+MAXM]=true;
+                        int minValue = INF ;
+                        QPoint nxt = QPoint(-1,-1);
+                        for(int k=0;k<MOVEDIRNUM;++k){
+                            int tx=x+dir[k][0], ty=y+dir[k][1];
+                            if(!outGridRange(QPoint(tx,ty)) && routeCheckPos(drop, QPoint(tx,ty))){
+                                int value = routeCalcBlockValue(QPoint(tx,ty)) ;
+                                if(value < minValue){
+                                    minValue = value ;
+                                    nxt = QPoint(tx,ty);
+                                }
+                            }
+                        }
+                        if(nxt!=QPoint(-1,-1))
+                            routeMoveDrop(drop, QPoint(x,y), nxt) ;
+                    }
+                }
+            }
+        }
+    }
     ui->labelCurTime->setNum(++timeNow);
     if(!playingAll) ui->actionNextStep->setEnabled(true);
     update();
