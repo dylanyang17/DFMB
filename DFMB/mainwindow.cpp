@@ -890,7 +890,7 @@ void MainWindow::mousePressEvent(QMouseEvent *event){
         x = (x-leftUp.x())/gridSize+1;
         y = (y-leftUp.y())/gridSize+1;
         y = row-y+1;
-        if(x>=1 && x<=col && y>=1 && y<=row){
+        if(x>=1 && x<=col && y>=1 && y<=row && event->x()>leftUp.x() && event->y()>leftUp.y()){
             ban[x][y]^=1;
         }
         update();
