@@ -599,13 +599,41 @@ int MainWindow::getMidState(int x1, int y1, int x2, int y2){
     } else return 2;
 }
 
-void MainWindow::instMove(int x1, int y1,int x2, int y2, bool rev){
-    //从x1,y1移动到x2,y2，rev为true时表明撤销移动
+void MainWindow::playMoveSound(){
     if(ui->actionSound->isChecked()) {
         QMediaPlayer *player = new QMediaPlayer(this) ;
         player->setMedia(QUrl::fromLocalFile(soundMovePath)) ;
         player->play();
     }
+}
+
+void MainWindow::playSplit1Sound(){
+    if(ui->actionSound->isChecked()) {
+        QMediaPlayer *player = new QMediaPlayer(this) ;
+        player->setMedia(QUrl::fromLocalFile(soundSplit1Path)) ;
+        player->play();
+    }
+}
+
+void MainWindow::playSplit2Sound(){
+    if(ui->actionSound->isChecked()) {
+        QMediaPlayer *player = new QMediaPlayer(this) ;
+        player->setMedia(QUrl::fromLocalFile(soundSplit2Path)) ;
+        player->play();
+    }
+}
+
+void MainWindow::playMergeSound(){
+    if(ui->actionSound->isChecked()) {
+        QMediaPlayer *player = new QMediaPlayer(this) ;
+        player->setMedia(QUrl::fromLocalFile(soundMergePath)) ;
+        player->play();
+    }
+}
+
+void MainWindow::instMove(int x1, int y1,int x2, int y2, bool rev){
+    //从x1,y1移动到x2,y2，rev为true时表明撤销移动
+    playMoveSound();
     if(!rev) {
         int drop=nowDrop[x1][y1];
         nowDrop[x2][y2] = drop ;
@@ -622,11 +650,7 @@ void MainWindow::instMove(int x1, int y1,int x2, int y2, bool rev){
 
 void MainWindow::instSplit1(int x1, int y1,int x2, int y2, int x3, int y3, bool rev){
     //从x1,y1分裂到x2,y2和x3,y3，rev为true时表明撤销分裂的首步
-    if(ui->actionSound->isChecked()) {
-        QMediaPlayer *player = new QMediaPlayer(this) ;
-        player->setMedia(QUrl::fromLocalFile(soundSplit1Path)) ;
-        player->play();
-    }
+    playSplit1Sound();
     if(!rev){
         nowDrop[x2][y2] = ++dropCnt ;
         nowDrop[x3][y3] = ++dropCnt ;
@@ -662,11 +686,7 @@ void MainWindow::instMerge1(int x1, int y1, int x2, int y2, int x3, int y3, bool
 
 void MainWindow::instSplit2(int x1, int y1,int x2, int y2, int x3, int y3, bool rev){
     //从x1,y1分裂到x2,y2和x3,y3，rev为true时表明撤销分裂的第二步
-    if(ui->actionSound->isChecked()) {
-        QMediaPlayer *player = new QMediaPlayer(this) ;
-        player->setMedia(QUrl::fromLocalFile(soundSplit2Path)) ;
-        player->play();
-    }
+    playSplit2Sound();
     if(!rev){
         disapDropStack.push(nowDrop[x1][y1]);
         nowDrop[x1][y1]=0;
@@ -682,11 +702,7 @@ void MainWindow::instSplit2(int x1, int y1,int x2, int y2, int x3, int y3, bool 
 
 void MainWindow::instMerge2(int x1, int y1, int x2, int y2, int x3, int y3, bool rev){
     //从x1,y1和x2,y2合并到x3,y3，rev为true是表示撤销合并的第二步
-   if(ui->actionSound->isChecked()) {
-       QMediaPlayer *player = new QMediaPlayer(this) ;
-       player->setMedia(QUrl::fromLocalFile(soundMergePath)) ;
-       player->play();
-   }
+    playMergeSound();
     if(!rev){
         disapDropStack.push(nowDrop[x1][y1]);
         disapDropStack.push(nowDrop[x2][y2]);
@@ -1131,6 +1147,7 @@ void MainWindow::routeMoveDrop(int drop, QPoint p1, QPoint p2){
     //从p1移动到p2
     routePlaceDrop(drop, p2);
     nowDrop[p1.x()][p1.y()]=0;
+    playMoveSound();
 }
 
 void MainWindow::routeBFS(int drop, QPoint s, bool washUsedUp=false){
@@ -1535,6 +1552,7 @@ void MainWindow::routeNextStep(){
                 memset(routeWashBan,0,sizeof(routeWashBan)) ;
                 routeSplitTarget=QPoint(-1,-1);
                 routeSplitPath.clear();
+                playSplit2Sound();
                 routeMoveSuc = true;
             } else if(routeSplitPath.length()==1){
                 if(routeCheckPos(drop1, p2) && routeCheckPos(drop1, p3)){
@@ -1544,6 +1562,7 @@ void MainWindow::routeNextStep(){
                     routeMoved[drop1] = routeMoved[drop2] = routeMoved[drop3] = true ;
                     notAlone[p2.x()][p2.y()] = notAlone[p3.x()][p3.y()] = true ;
                     midState[p1.x()][p1.y()] = QPoint(1, 1) ;
+                    playSplit1Sound();
                     routeMoveSuc = true;
                 }
             } else if(routeSplitPath.length()>1 && routeCheckPos(drop1, routeSplitPath.at(1))){
@@ -1575,6 +1594,7 @@ void MainWindow::routeNextStep(){
                 routeOperPoint++;
                 routeMoved[drop1+MAXM] = routeMoved[drop2+MAXM] = routeMoved[drop3+MAXM] = true ;
                 routeMoveSuc = true;
+                playMergeSound();
             } else if(routeMergePath1.length()==1 && routeMergePath2.length()==1){
           //      debug("test4");
                 routeMergeMid=true;

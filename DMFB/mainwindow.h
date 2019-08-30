@@ -125,6 +125,10 @@ public:
     bool routeGetSplitTarget(int drop, QPoint p);
     bool routeHandleWashDrop();
     bool routeGetOutputTarget(int drop, QPoint p);
+    void playMergeSound();
+    void playSplit2Sound();
+    void playSplit1Sound();
+    void playMoveSound();
 private slots:
 
     void on_actionSetDFMB_triggered();
