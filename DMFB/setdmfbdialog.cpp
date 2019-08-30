@@ -1,10 +1,10 @@
-#include "setdfmbdialog.h"
-#include "ui_setdfmbdialog.h"
+#include "setdmfbdialog.h"
+#include "ui_setdmfbdialog.h"
 #include <QString>
 #include "mainwindow.h"
 #include <QMessageBox>
 
-SetDFMBDialog::SetDFMBDialog(QWidget *parent, int col, int row, QString inPortStr, QString outPortStr, MainWindow *mainWindow) :
+SetDMFBDialog::SetDMFBDialog(QWidget *parent, int col, int row, QString inPortStr, QString outPortStr, MainWindow *mainWindow) :
     QDialog(parent),
     ui(new Ui::SetDFMBDialog)
 {
@@ -16,7 +16,7 @@ SetDFMBDialog::SetDFMBDialog(QWidget *parent, int col, int row, QString inPortSt
     this->mainWindow = mainWindow;
 }
 
-SetDFMBDialog::~SetDFMBDialog()
+SetDMFBDialog::~SetDMFBDialog()
 {
     delete ui;
 }
@@ -26,7 +26,7 @@ bool isOnEdge(QPoint p, int col, int row)
     return p.x()==1||p.x()==col||p.y()==1||p.y()==row;
 }
 
-void SetDFMBDialog::on_buttonBox_accepted()
+void SetDMFBDialog::on_buttonBox_accepted()
 {
     int col=ui->spinBoxCol->value();
     int row=ui->spinBoxRow->value();

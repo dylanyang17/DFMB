@@ -11,7 +11,7 @@
 #include <QQueue>
 #include <QMediaPlayer>
 #include <QStack>
-#include "setdfmbdialog.h"
+#include "setdmfbdialog.h"
 
 namespace Ui {
 class MainWindow;
@@ -149,7 +149,7 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    SetDFMBDialog *setdfmbdialog;
+    SetDMFBDialog *setdfmbdialog;
 
     int tinySize, gridSize, col, row, timeLim, timeNow, dropCnt;
     const QString soundDir=QDir::currentPath()+"/res/", soundMovePath=soundDir+"move.wav",

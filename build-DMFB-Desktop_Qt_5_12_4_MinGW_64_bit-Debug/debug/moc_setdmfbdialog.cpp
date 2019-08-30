@@ -1,16 +1,16 @@
 /****************************************************************************
-** Meta object code from reading C++ file 'setdfmbdialog.h'
+** Meta object code from reading C++ file 'setdmfbdialog.h'
 **
 ** Created by: The Qt Meta Object Compiler version 67 (Qt 5.12.4)
 **
 ** WARNING! All changes made in this file will be lost!
 *****************************************************************************/
 
-#include "../../DFMB/setdfmbdialog.h"
+#include "../../DMFB/setdmfbdialog.h"
 #include <QtCore/qbytearray.h>
 #include <QtCore/qmetatype.h>
 #if !defined(Q_MOC_OUTPUT_REVISION)
-#error "The header file 'setdfmbdialog.h' doesn't include <QObject>."
+#error "The header file 'setdmfbdialog.h' doesn't include <QObject>."
 #elif Q_MOC_OUTPUT_REVISION != 67
 #error "This file was generated using the moc from 5.12.4. It"
 #error "cannot be used with the include files from this version of Qt."
@@ -20,28 +20,28 @@
 QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
-struct qt_meta_stringdata_SetDFMBDialog_t {
+struct qt_meta_stringdata_SetDMFBDialog_t {
     QByteArrayData data[3];
     char stringdata0[37];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
-    qptrdiff(offsetof(qt_meta_stringdata_SetDFMBDialog_t, stringdata0) + ofs \
+    qptrdiff(offsetof(qt_meta_stringdata_SetDMFBDialog_t, stringdata0) + ofs \
         - idx * sizeof(QByteArrayData)) \
     )
-static const qt_meta_stringdata_SetDFMBDialog_t qt_meta_stringdata_SetDFMBDialog = {
+static const qt_meta_stringdata_SetDMFBDialog_t qt_meta_stringdata_SetDMFBDialog = {
     {
-QT_MOC_LITERAL(0, 0, 13), // "SetDFMBDialog"
+QT_MOC_LITERAL(0, 0, 13), // "SetDMFBDialog"
 QT_MOC_LITERAL(1, 14, 21), // "on_buttonBox_accepted"
 QT_MOC_LITERAL(2, 36, 0) // ""
 
     },
-    "SetDFMBDialog\0on_buttonBox_accepted\0"
+    "SetDMFBDialog\0on_buttonBox_accepted\0"
     ""
 };
 #undef QT_MOC_LITERAL
 
-static const uint qt_meta_data_SetDFMBDialog[] = {
+static const uint qt_meta_data_SetDMFBDialog[] = {
 
  // content:
        8,       // revision
@@ -63,10 +63,10 @@ static const uint qt_meta_data_SetDFMBDialog[] = {
        0        // eod
 };
 
-void SetDFMBDialog::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
+void SetDMFBDialog::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
 {
     if (_c == QMetaObject::InvokeMetaMethod) {
-        auto *_t = static_cast<SetDFMBDialog *>(_o);
+        auto *_t = static_cast<SetDMFBDialog *>(_o);
         Q_UNUSED(_t)
         switch (_id) {
         case 0: _t->on_buttonBox_accepted(); break;
@@ -76,30 +76,30 @@ void SetDFMBDialog::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _i
     Q_UNUSED(_a);
 }
 
-QT_INIT_METAOBJECT const QMetaObject SetDFMBDialog::staticMetaObject = { {
+QT_INIT_METAOBJECT const QMetaObject SetDMFBDialog::staticMetaObject = { {
     &QDialog::staticMetaObject,
-    qt_meta_stringdata_SetDFMBDialog.data,
-    qt_meta_data_SetDFMBDialog,
+    qt_meta_stringdata_SetDMFBDialog.data,
+    qt_meta_data_SetDMFBDialog,
     qt_static_metacall,
     nullptr,
     nullptr
 } };
 
 
-const QMetaObject *SetDFMBDialog::metaObject() const
+const QMetaObject *SetDMFBDialog::metaObject() const
 {
     return QObject::d_ptr->metaObject ? QObject::d_ptr->dynamicMetaObject() : &staticMetaObject;
 }
 
-void *SetDFMBDialog::qt_metacast(const char *_clname)
+void *SetDMFBDialog::qt_metacast(const char *_clname)
 {
     if (!_clname) return nullptr;
-    if (!strcmp(_clname, qt_meta_stringdata_SetDFMBDialog.stringdata0))
+    if (!strcmp(_clname, qt_meta_stringdata_SetDMFBDialog.stringdata0))
         return static_cast<void*>(this);
     return QDialog::qt_metacast(_clname);
 }
 
-int SetDFMBDialog::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
+int SetDMFBDialog::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
 {
     _id = QDialog::qt_metacall(_c, _id, _a);
     if (_id < 0)

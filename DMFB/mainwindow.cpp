@@ -1,6 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "setdfmbdialog.h"
+#include "setdmfbdialog.h"
 #include <QDebug>
 #include <QPainter>
 #include <QPoint>
@@ -569,7 +569,7 @@ void MainWindow::autoSet(){
 
 void MainWindow::on_actionSetDFMB_triggered()
 {
-    setdfmbdialog = new SetDFMBDialog(this, col, row, inPortStr, outPortStr, this);
+    setdfmbdialog = new SetDMFBDialog(this, col, row, inPortStr, outPortStr, this);
     setdfmbdialog -> show();
 }
 

@@ -167,7 +167,7 @@ public:
         MainWindow->setCentralWidget(centralWidget);
         menuBar = new QMenuBar(MainWindow);
         menuBar->setObjectName(QString::fromUtf8("menuBar"));
-        menuBar->setGeometry(QRect(0, 0, 747, 26));
+        menuBar->setGeometry(QRect(0, 0, 747, 23));
         menuTEST = new QMenu(menuBar);
         menuTEST->setObjectName(QString::fromUtf8("menuTEST"));
         menu = new QMenu(menuBar);
@@ -205,7 +205,7 @@ public:
 
     void retranslateUi(QMainWindow *MainWindow)
     {
-        MainWindow->setWindowTitle(QApplication::translate("MainWindow", "DFMB\346\250\241\346\213\237\347\263\273\347\273\237", nullptr));
+        MainWindow->setWindowTitle(QApplication::translate("MainWindow", "DMFB\346\250\241\346\213\237\347\263\273\347\273\237", nullptr));
         actionReset->setText(QApplication::translate("MainWindow", "\345\244\215\344\275\215", nullptr));
 #ifndef QT_NO_SHORTCUT
         actionReset->setShortcut(QApplication::translate("MainWindow", "F1", nullptr));

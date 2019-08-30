@@ -10,13 +10,13 @@ class SetDFMBDialog;
 
 class MainWindow;
 
-class SetDFMBDialog : public QDialog
+class SetDMFBDialog : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit SetDFMBDialog(QWidget *parent = nullptr, int col=5, int row=5, QString inPortStr="", QString outPortStr="", MainWindow *mainWindow=NULL);
-    ~SetDFMBDialog();
+    explicit SetDMFBDialog(QWidget *parent = nullptr, int col=5, int row=5, QString inPortStr="", QString outPortStr="", MainWindow *mainWindow=NULL);
+    ~SetDMFBDialog();
 
 private slots:
     void on_buttonBox_accepted();

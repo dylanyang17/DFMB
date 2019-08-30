@@ -17,7 +17,7 @@
    </sizepolicy>
   </property>
   <property name="windowTitle">
-   <string>DFMB设置</string>
+   <string>DMFB设置</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <property name="bottomMargin">
